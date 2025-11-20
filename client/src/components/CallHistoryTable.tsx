@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,12 +11,19 @@ import { PriorityBadge } from "./PriorityBadge";
 import { StatusBadge } from "./StatusBadge";
 import type { DispatchCall } from "@shared/schema";
 import { format } from "date-fns";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface CallHistoryTableProps {
   calls: DispatchCall[];
 }
 
+type SortKey = "time" | "id" | "priority" | "location" | "type" | "status" | "unit";
+type SortDirection = "asc" | "desc" | null;
+
 export function CallHistoryTable({ calls }: CallHistoryTableProps) {
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return "—";
     try {
@@ -25,6 +33,84 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
       return "—";
     }
   };
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      // Cycle through: asc -> desc -> null
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else if (sortDirection === "desc") {
+        setSortDirection(null);
+        setSortKey(null);
+      }
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortedCalls = () => {
+    if (!sortKey || !sortDirection) return calls;
+
+    return [...calls].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+
+      switch (sortKey) {
+        case "time":
+          aVal = new Date(a.DispatchTime || a.CreatedAt || 0).getTime();
+          bVal = new Date(b.DispatchTime || b.CreatedAt || 0).getTime();
+          break;
+        case "id":
+          aVal = a.CallNumber || a.Id;
+          bVal = b.CallNumber || b.Id;
+          break;
+        case "priority":
+          const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+          aVal = priorityOrder[a.Priority?.toLowerCase() as keyof typeof priorityOrder] ?? 999;
+          bVal = priorityOrder[b.Priority?.toLowerCase() as keyof typeof priorityOrder] ?? 999;
+          break;
+        case "location":
+          aVal = a.Location || a.Address || "";
+          bVal = b.Location || b.Address || "";
+          break;
+        case "type":
+          aVal = a.CallType || "";
+          bVal = b.CallType || "";
+          break;
+        case "status":
+          aVal = a.Status || "";
+          bVal = b.Status || "";
+          break;
+        case "unit":
+          aVal = a.Unit || a.UnitAssigned || "";
+          bVal = b.Unit || b.UnitAssigned || "";
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDirection === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+    });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+    if (sortKey !== columnKey) {
+      return <ArrowUpDown className="w-5 h-5 ml-2 text-muted-foreground" />;
+    }
+    if (sortDirection === "asc") {
+      return <ArrowUp className="w-5 h-5 ml-2 text-primary" />;
+    }
+    return <ArrowDown className="w-5 h-5 ml-2 text-primary" />;
+  };
+
+  const sortedCalls = getSortedCalls();
 
   if (calls.length === 0) {
     return (
@@ -39,17 +125,80 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
       <Table>
         <TableHeader>
           <TableRow className="border-b-2 border-border hover:bg-transparent">
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Time</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Call ID</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Priority</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Location</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Type</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Status</TableHead>
-            <TableHead className="text-2xl font-semibold pb-6 text-foreground">Unit</TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("time")}
+              data-testid="header-time"
+            >
+              <div className="flex items-center">
+                Time
+                <SortIcon columnKey="time" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("id")}
+              data-testid="header-id"
+            >
+              <div className="flex items-center">
+                Call ID
+                <SortIcon columnKey="id" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("priority")}
+              data-testid="header-priority"
+            >
+              <div className="flex items-center">
+                Priority
+                <SortIcon columnKey="priority" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("location")}
+              data-testid="header-location"
+            >
+              <div className="flex items-center">
+                Location
+                <SortIcon columnKey="location" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("type")}
+              data-testid="header-type"
+            >
+              <div className="flex items-center">
+                Type
+                <SortIcon columnKey="type" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("status")}
+              data-testid="header-status"
+            >
+              <div className="flex items-center">
+                Status
+                <SortIcon columnKey="status" />
+              </div>
+            </TableHead>
+            <TableHead
+              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
+              onClick={() => handleSort("unit")}
+              data-testid="header-unit"
+            >
+              <div className="flex items-center">
+                Unit
+                <SortIcon columnKey="unit" />
+              </div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {calls.map((call) => (
+          {sortedCalls.map((call) => (
             <TableRow
               key={call.Id}
               className="h-20 border-b border-border hover-elevate"
