@@ -189,17 +189,19 @@ export default function CombinedDashboard() {
 
       {/* Radio Popup Dialog */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
-        <DialogContent className="max-w-2xl h-[600px] z-[9999]" data-testid="dialog-radio" style={{ zIndex: 9999 }}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Radio className="w-5 h-5" />
-              Radio Stream
-            </DialogTitle>
-            <DialogDescription>
-              Live radio stream for dispatch communications
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 w-full h-full">
+        <DialogContent className="w-[640px] max-w-[640px] h-auto max-h-[90vh] p-0" data-testid="dialog-radio">
+          <div className="p-6 pb-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Radio className="w-5 h-5" />
+                Radio Stream
+              </DialogTitle>
+              <DialogDescription>
+                Live radio stream for dispatch communications
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="w-[640px] h-[608px] p-6 pt-4">
             <iframe
               src="https://compassionate-connection.up.railway.app/"
               className="w-full h-full border-0 rounded-md"
