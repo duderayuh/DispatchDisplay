@@ -104,6 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
 
       // Make request to FlightRadar24 API with timeout
+      // Note: We filter helicopters server-side since API filtering parameters vary
       const response = await axios.get(apiUrl, {
         headers: {
           'Accept': 'application/json',
@@ -112,18 +113,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         params: {
           bounds: `${bounds.north},${bounds.south},${bounds.west},${bounds.east}`,
-          // Filter for helicopters using common helicopter ICAO codes
-          aircraft_type: 'H60,EC35,EC45,BK17,AS50,B06,B429,B407,B412,MD50,MD60,R44,R66,S76',
         },
         timeout: 10000, // 10 second timeout
       });
 
       // Transform FlightRadar24 response to our helicopter schema
       const helicopters: Helicopter[] = [];
+      let totalAircraft = 0;
+      let filteredOut = 0;
+
+      // Whitelist of known helicopter ICAO designators (exact match, case-insensitive)
+      const helicopterICAOCodes = new Set([
+        'H60', 'H64', 'EC35', 'EC45', 'EC30', 'EC55', 'EC65', 'EC75', 'BK17', 'AS50', 'AS32', 'AS35', 'AS50', 'AS55', 'AS65',
+        'B06', 'B47', 'B429', 'B407', 'B412', 'B505', 'MD50', 'MD60', 'MD90', 'MD52', 'MD11', 'R44', 'R66', 'R22', 
+        'S76', 'S92', 'A109', 'A119', 'A139', 'A169', 'A189', 'MI17', 'MI24', 'MI35', 'UH1', 'AH64', 'CH47', 
+        'ASTR', 'AS32', 'BO05', 'BO06', 'H500', 'H135', 'H145', 'H160', 'H175', 'H225', 'AW09', 'AW19', 'AW39', 'AW59', 'AW69', 'AW89'
+      ]);
 
       if (response.data && response.data.data) {
         for (const [flightId, flightData] of Object.entries(response.data.data as Record<string, any>)) {
+          totalAircraft++;
+          
           try {
+            // Check the correct field for helicopter category
+            const aircraftCategory = flightData.aircraft?.category ?? flightData.detail?.aircraft?.category ?? '';
+            const aircraftType = (flightData.type || flightData.aircraft_code || '').toUpperCase();
+            
+            // Temporary debug logging for first aircraft
+            if (totalAircraft === 1) {
+              console.log('[Debug] Sample aircraft data:', {
+                flightId,
+                category: aircraftCategory,
+                type: aircraftType,
+                rawCategory: flightData.category,
+                aircraftObj: flightData.aircraft,
+                detailObj: flightData.detail
+              });
+            }
+            
+            // Check if this is a helicopter:
+            // 1. Check category field (value 'H' or 'helicopter')
+            // 2. Check exact ICAO code match from whitelist
+            const isCategoryHelicopter = aircraftCategory === 'H' || 
+                                        aircraftCategory === 'h' ||
+                                        aircraftCategory.toLowerCase() === 'helicopter';
+            
+            const isICAOHelicopter = helicopterICAOCodes.has(aircraftType);
+            
+            const isHelicopter = isCategoryHelicopter || isICAOHelicopter;
+            
+            if (!isHelicopter) {
+              filteredOut++;
+              continue; // Skip non-helicopters
+            }
+
             const helicopter: Helicopter = {
               id: flightId,
               latitude: flightData.lat || flightData.latitude,
@@ -148,6 +191,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
+
+      // Log filtering stats for debugging
+      console.log(`[Helicopter Filter] Total aircraft: ${totalAircraft}, Filtered out: ${filteredOut}, Helicopters: ${helicopters.length}`);
 
       // Return empty array if no helicopters found (not an error)
       res.json(helicopters);
