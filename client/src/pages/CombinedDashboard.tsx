@@ -67,29 +67,29 @@ export default function CombinedDashboard() {
           <div className="flex items-center gap-4">
             <Plane className="w-10 h-10 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Methodist Hospital</h1>
-              <p className="text-base text-muted-foreground">Emergency Tracking System</p>
+              <h1 className="text-3xl font-bold text-foreground leading-tight">Methodist Hospital</h1>
+              <p className="text-lg text-muted-foreground">Emergency Tracking System</p>
             </div>
           </div>
         </div>
         
         <div className="flex items-center gap-8">
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">Active Helicopters</div>
+            <div className="text-lg text-muted-foreground">Active Helicopters</div>
             <div className="text-3xl font-bold text-primary tabular-nums" data-testid="text-helicopter-count">
               {helicopterCount}
             </div>
           </div>
           
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">Recent Calls</div>
+            <div className="text-lg text-muted-foreground">Recent Calls</div>
             <div className="text-3xl font-bold text-primary tabular-nums" data-testid="text-dispatch-count">
               {sortedCalls.length}
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">Last Update</div>
+            <div className="text-lg text-muted-foreground">Last Update</div>
             <div className="text-lg font-mono text-foreground" data-testid="text-last-update">
               {lastHelicopterUpdate ? format(lastHelicopterUpdate, 'HH:mm:ss') : '--:--:--'}
             </div>
@@ -110,7 +110,7 @@ export default function CombinedDashboard() {
               <Plane className="w-6 h-6 text-primary" />
               <h2 className="text-2xl font-bold text-foreground">Helicopter Tracker</h2>
             </div>
-            <p className="text-base text-muted-foreground">Indianapolis, IN</p>
+            <p className="text-lg text-muted-foreground">Indianapolis, IN</p>
           </div>
           
           {helicoptersLoading ? (
@@ -170,9 +170,9 @@ export default function CombinedDashboard() {
         </div>
       </div>
       {/* Footer */}
-      <footer className="h-10 bg-card border-t border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="footer-combined">
-        <p className="text-sm text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
-        <p className="text-sm text-muted-foreground font-mono">Auto-refresh: 15s</p>
+      <footer className="h-12 bg-card border-t border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="footer-combined">
+        <p className="text-lg text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
+        <p className="text-lg text-muted-foreground font-mono">Auto-refresh: 15s</p>
       </footer>
     </div>
   );

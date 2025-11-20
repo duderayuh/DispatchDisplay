@@ -62,33 +62,33 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
 
   return (
     <Card
-      className={`p-4 border-l-4 border-l-primary transition-all duration-300 ${
+      className={`p-6 border-l-4 border-l-primary transition-all duration-300 ${
         isNew ? "bg-primary/5" : ""
       }`}
       data-testid={`card-active-call-${call.id}`}
     >
       {/* Compact Header */}
-      <div className="flex items-start justify-between gap-3 mb-2">
+      <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-foreground truncate" data-testid={`text-chief-complaint-${call.id}`}>
+          <h3 className="text-2xl font-bold text-foreground line-clamp-2 leading-tight" data-testid={`text-chief-complaint-${call.id}`}>
             {chiefComplaint}
           </h3>
         </div>
-        <Badge className="bg-primary text-primary-foreground px-2 py-0.5 text-xs font-semibold shrink-0">
+        <Badge className="bg-primary text-primary-foreground px-3 py-1 text-lg font-semibold shrink-0">
           #{call.id}
         </Badge>
       </div>
 
       {/* Timestamp */}
-      <div className="flex items-center gap-2 mb-2" data-testid={`text-dispatch-time-${call.id}`}>
-        <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        <span className="text-sm text-muted-foreground font-mono">
+      <div className="flex items-center gap-2 mb-3" data-testid={`text-dispatch-time-${call.id}`}>
+        <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
+        <span className="text-lg text-muted-foreground font-mono">
           {formatTimeAgo(call.timestamp)}
         </span>
       </div>
 
       {/* Summary */}
-      <div className="text-sm text-foreground/80 line-clamp-2" data-testid={`text-summary-${call.id}`}>
+      <div className="text-xl text-foreground/80 line-clamp-3 leading-relaxed" data-testid={`text-summary-${call.id}`}>
         {cleanSummary}
       </div>
     </Card>
