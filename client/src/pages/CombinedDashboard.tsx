@@ -122,7 +122,7 @@ export default function CombinedDashboard() {
               <Plane className="w-6 h-6 text-primary" />
               <h2 className="text-2xl font-bold text-foreground">Helicopter Tracker</h2>
             </div>
-            <p className="text-[20px] text-muted-foreground">Indianapolis, IN</p>
+            <p className="text-muted-foreground text-[18px]">Indianapolis, IN</p>
           </div>
           
           {helicoptersLoading ? (
@@ -186,7 +186,6 @@ export default function CombinedDashboard() {
         <p className="text-[20px] text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
         <p className="text-[20px] text-muted-foreground font-mono">Auto-refresh: 15s</p>
       </footer>
-
       {/* Radio Popup Dialog */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
         <DialogContent className="w-[640px] max-w-[640px] h-auto max-h-[90vh] p-0" data-testid="dialog-radio">
@@ -206,7 +205,6 @@ export default function CombinedDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* Single persistent iframe - always mounted, CSS controls visibility/position */}
       <div style={{ 
         position: 'fixed',
