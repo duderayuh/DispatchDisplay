@@ -49,7 +49,7 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
       {/* Compact Header */}
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-2xl font-bold text-foreground line-clamp-2 leading-tight" data-testid={`text-chief-complaint-${call.id}`}>
+          <h3 className="font-bold text-foreground line-clamp-2 text-[26px]" data-testid={`text-chief-complaint-${call.id}`}>
             {chiefComplaint}
           </h3>
         </div>
