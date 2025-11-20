@@ -210,3 +210,10 @@ Preferred communication style: Simple, everyday language.
 - Loading states while AI extraction in progress
 - Fallback to truncated summary if AI fails
 - Updated Dialog component z-indexes for proper layering above maps
+
+**Production Deployment Fixes (November 20, 2025)**:
+- Added `.node-version` file to enforce Node.js 20+ requirement
+- Fixes Railway deployment error: `import.meta.dirname` requires Node 20.11.0+
+- Production environment was running Node 18.20.5, causing startup crashes
+- Solution: Created `.node-version` with "20" to force correct Node version
+- Updated deployment documentation with Node version requirements

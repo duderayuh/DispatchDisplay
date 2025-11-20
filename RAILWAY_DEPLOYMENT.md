@@ -6,6 +6,7 @@ This comprehensive emergency tracking dashboard combines helicopter monitoring a
 
 - Railway account (sign up at https://railway.app)
 - GitHub repository with this code
+- **Node.js 20+** (automatically configured via `.node-version` file)
 - OpenAI API key (standard OpenAI account, not Replit AI Integrations)
 - FlightRadar24 API key
 - NocoDB instance with dispatch call data
@@ -202,7 +203,8 @@ Or in Railway dashboard → "Deployments" → Select deployment → "View Logs"
 ### Common Issues
 
 **Build Fails**
-- Check Node.js version compatibility (app uses Node 20+)
+- Check Node.js version compatibility (app **requires Node 20+** due to `import.meta.dirname` usage)
+- The `.node-version` file in the repository ensures Railway uses Node 20
 - Verify all dependencies are in `package.json`
 - Review build logs for specific errors
 
