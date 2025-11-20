@@ -60,7 +60,7 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
       {/* Timestamp */}
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
-        <span className="text-[20px] text-muted-foreground font-mono" data-testid={`text-dispatch-time-${call.id}`}>
+        <span className="text-muted-foreground font-mono text-[14px]" data-testid={`text-dispatch-time-${call.id}`}>
           {formatTimeAgo(call.timestamp)}
         </span>
       </div>
