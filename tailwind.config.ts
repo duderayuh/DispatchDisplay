@@ -5,6 +5,14 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontSize: {
+        // Override Tailwind defaults for TV display (minimum 20px)
+        lg: ["20px", { lineHeight: "1.75rem" }], // 20px (was 18px default)
+        xl: ["24px", { lineHeight: "2rem" }], // 24px (was 20px default)
+        "2xl": ["32px", { lineHeight: "2.5rem" }], // 32px (was 24px default)
+        "3xl": ["40px", { lineHeight: "2.75rem" }], // 40px (was 30px default)
+        "4xl": ["48px", { lineHeight: "3rem" }], // 48px (was 36px default)
+      },
       borderRadius: {
         lg: ".5625rem", /* 9px */
         md: ".375rem", /* 6px */

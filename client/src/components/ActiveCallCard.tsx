@@ -74,15 +74,15 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
             {chiefComplaint}
           </h3>
         </div>
-        <Badge className="bg-primary text-primary-foreground px-3 py-1 text-lg font-semibold shrink-0">
+        <Badge className="bg-primary text-primary-foreground px-3 py-1 text-[20px] font-semibold shrink-0">
           #{call.id}
         </Badge>
       </div>
 
       {/* Timestamp */}
-      <div className="flex items-center gap-2 mb-3" data-testid={`text-dispatch-time-${call.id}`}>
+      <div className="flex items-center gap-2 mb-3">
         <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
-        <span className="text-lg text-muted-foreground font-mono">
+        <span className="text-[20px] text-muted-foreground font-mono" data-testid={`text-dispatch-time-${call.id}`}>
           {formatTimeAgo(call.timestamp)}
         </span>
       </div>

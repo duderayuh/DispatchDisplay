@@ -68,36 +68,36 @@ export default function CombinedDashboard() {
             <Plane className="w-10 h-10 text-primary" />
             <div>
               <h1 className="text-3xl font-bold text-foreground leading-tight">Methodist Hospital</h1>
-              <p className="text-lg text-muted-foreground">Emergency Tracking System</p>
+              <p className="text-[20px] text-muted-foreground">Emergency Tracking System</p>
             </div>
           </div>
         </div>
         
         <div className="flex items-center gap-8">
           <div className="text-right">
-            <div className="text-lg text-muted-foreground">Active Helicopters</div>
+            <div className="text-[20px] text-muted-foreground">Active Helicopters</div>
             <div className="text-3xl font-bold text-primary tabular-nums" data-testid="text-helicopter-count">
               {helicopterCount}
             </div>
           </div>
           
           <div className="text-right">
-            <div className="text-lg text-muted-foreground">Recent Calls</div>
+            <div className="text-[20px] text-muted-foreground">Recent Calls</div>
             <div className="text-3xl font-bold text-primary tabular-nums" data-testid="text-dispatch-count">
               {sortedCalls.length}
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-lg text-muted-foreground">Last Update</div>
-            <div className="text-lg font-mono text-foreground" data-testid="text-last-update">
+            <div className="text-[20px] text-muted-foreground">Last Update</div>
+            <div className="text-[20px] font-mono text-foreground" data-testid="text-last-update">
               {lastHelicopterUpdate ? format(lastHelicopterUpdate, 'HH:mm:ss') : '--:--:--'}
             </div>
           </div>
 
           <div className="flex items-center gap-2" data-testid="status-connection">
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-lg text-foreground">Live</span>
+            <span className="text-[20px] text-foreground">Live</span>
           </div>
         </div>
       </header>
@@ -110,7 +110,7 @@ export default function CombinedDashboard() {
               <Plane className="w-6 h-6 text-primary" />
               <h2 className="text-2xl font-bold text-foreground">Helicopter Tracker</h2>
             </div>
-            <p className="text-lg text-muted-foreground">Indianapolis, IN</p>
+            <p className="text-[20px] text-muted-foreground">Indianapolis, IN</p>
           </div>
           
           {helicoptersLoading ? (
@@ -119,7 +119,7 @@ export default function CombinedDashboard() {
             <div className="flex-1 flex items-center justify-center bg-card border border-card-border rounded-lg">
               <div className="text-center space-y-3">
                 <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-                <p className="text-lg text-muted-foreground">Unable to load helicopter data</p>
+                <p className="text-[20px] text-muted-foreground">Unable to load helicopter data</p>
               </div>
             </div>
           ) : (
@@ -130,7 +130,7 @@ export default function CombinedDashboard() {
         </div>
 
         {/* Right Half - Dispatch Calls */}
-        <div className="w-1/2 p-4 border-l border-card-border flex flex-col" data-testid="section-dispatch-calls">
+        <div className="w-1/2 p-4 border-l border-card-border flex flex-col min-h-0" data-testid="section-dispatch-calls">
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <div className="flex items-center gap-2">
               <FileText className="w-6 h-6 text-primary" />
@@ -139,24 +139,24 @@ export default function CombinedDashboard() {
           </div>
 
           {dispatchLoading ? (
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 space-y-4 min-h-0">
               <Skeleton className="h-64" />
               <Skeleton className="h-64" />
             </div>
           ) : dispatchError ? (
-            <div className="flex-1 flex items-center justify-center bg-card border border-card-border rounded-lg">
+            <div className="flex-1 flex items-center justify-center bg-card border border-card-border rounded-lg min-h-0">
               <div className="text-center space-y-3">
                 <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-                <p className="text-lg text-muted-foreground">Unable to load dispatch calls</p>
+                <p className="text-[20px] text-muted-foreground">Unable to load dispatch calls</p>
               </div>
             </div>
           ) : sortedCalls.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center bg-card border border-card-border rounded-lg">
+            <div className="flex-1 flex items-center justify-center bg-card border border-card-border rounded-lg min-h-0">
               <p className="text-xl text-muted-foreground">No recent dispatch calls</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="space-y-4 pr-4">
                 {sortedCalls.map((call) => (
                   <ActiveCallCard 
                     key={call.id} 
@@ -171,8 +171,8 @@ export default function CombinedDashboard() {
       </div>
       {/* Footer */}
       <footer className="h-12 bg-card border-t border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="footer-combined">
-        <p className="text-lg text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
-        <p className="text-lg text-muted-foreground font-mono">Auto-refresh: 15s</p>
+        <p className="text-[20px] text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
+        <p className="text-[20px] text-muted-foreground font-mono">Auto-refresh: 15s</p>
       </footer>
     </div>
   );
