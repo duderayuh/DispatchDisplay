@@ -16,6 +16,19 @@ export default {
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
+        priority: {
+          critical: "rgb(220 38 38)",
+          high: "rgb(234 88 12)",
+          medium: "rgb(234 179 8)",
+          low: "rgb(34 197 94)",
+        },
+        status: {
+          active: "rgb(239 68 68)",
+          enroute: "rgb(251 146 60)",
+          onscene: "rgb(59 130 246)",
+          cleared: "rgb(34 197 94)",
+          cancelled: "rgb(156 163 175)",
+        },
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
