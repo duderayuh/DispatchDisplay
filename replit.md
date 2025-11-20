@@ -1,8 +1,8 @@
-# Helicopter Tracking Dashboard
+# Methodist Hospital Emergency Tracking System
 
 ## Overview
 
-A real-time helicopter tracking dashboard designed for emergency dispatch and TV display. The application fetches live helicopter data from FlightRadar24 API and displays it on an interactive map of Indianapolis. Built with React, Express, Leaflet, and Tailwind CSS in dark mode for optimal night viewing and TV display.
+A comprehensive real-time tracking system combining helicopter monitoring and emergency dispatch call management for Methodist Hospital. The application features two integrated dashboards: (1) Live helicopter tracking with smooth animations and flight path trails using FlightRadar24 API, and (2) Emergency dispatch call monitoring from NocoDB. Built with React, Express, Leaflet, and Tailwind CSS in dark mode for optimal night viewing and TV display.
 
 ## User Preferences
 
@@ -34,11 +34,32 @@ Preferred communication style: Simple, everyday language.
 - 16:9 aspect ratio optimization
 - Custom fonts: Inter for UI, Roboto Mono for timestamps
 
+**Navigation**:
+- Top navigation bar with two main sections:
+  - Helicopter Tracker (/) - Real-time helicopter map with smooth animations
+  - Dispatch Dashboard (/dispatch) - Emergency call monitoring
+- Active link highlighting with primary color
+- Fixed at top with z-index 50 for always-visible navigation
+
 **Key Components**:
-- `HelicopterTracker`: Main page with header, map, and footer
-- `HelicopterMap`: Interactive Leaflet map with helicopter markers
-- Header: Shows helicopter count, last update time, and connection status
-- Helicopter markers: Red circular icons with rotation based on heading, clickable popups with flight details
+- `Navigation`: Top bar for switching between Helicopter Tracker and Dispatch Dashboard
+- `HelicopterTracker`: Main helicopter tracking page with status bar and map
+- `HelicopterMap`: Interactive Leaflet map with smooth marker animations and beautiful trails
+- `Dashboard`: Emergency dispatch call monitoring page with recent calls and history
+- `ActiveCallCard`: Large-format cards for recent emergency dispatch calls
+- `CallHistoryTable`: Sortable table for older dispatch calls
+
+**Helicopter Tracking Features**:
+- Smooth marker animations: Helicopters glide smoothly between positions over 1.5 seconds using requestAnimationFrame interpolation
+- Easing function: easeOutCubic for natural deceleration
+- Beautiful gradient trails: Polyline paths showing recent flight history with:
+  - Opacity fade effect (newer segments 0.8 opacity → older segments 0.15 opacity)
+  - Variable line weight (3-5px, thicker for newer segments)
+  - Glow effect on most recent segment (#fecaca overlay)
+  - Keeps last 8 positions or 5 minutes of history per helicopter
+- Red circular markers with heading rotation (smooth CSS transitions)
+- Clickable popups with flight details (callsign, aircraft type, altitude, speed, heading)
+- Status bar shows active helicopter count, last update time, and connection status
 
 ### Backend Architecture
 
