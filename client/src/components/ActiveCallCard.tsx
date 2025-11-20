@@ -10,38 +10,72 @@ interface ActiveCallCardProps {
 }
 
 // Extract chief complaint from summary using AI/pattern matching
+// Returns ALL medical keywords found, not just the first one
 function extractChiefComplaint(summary: string): string {
   if (!summary) return "Emergency Call";
   
+  // Known medical acronyms that should stay uppercase
+  const acronyms = new Set([
+    'stemi', 'nstemi', 'mi', 'cva', 'od', 'gsw', 'ams', 'gcs'
+  ]);
+  
   // Common medical emergency keywords to prioritize
   const medicalKeywords = [
-    'chest pain', 'difficulty breathing', 'unconscious', 'cardiac arrest',
-    'stroke', 'seizure', 'bleeding', 'trauma', 'fall', 'accident',
-    'overdose', 'allergic reaction', 'diabetic', 'heart attack',
-    'shortness of breath', 'respiratory', 'injury', 'fracture',
-    'abdominal pain', 'head injury', 'burn', 'choking'
+    'stemi', 'nstemi', 'mi', 'cardiac arrest', 'heart attack',
+    'stroke', 'cva', 'seizure', 'unconscious', 'unresponsive',
+    'chest pain', 'difficulty breathing', 'shortness of breath', 'respiratory distress',
+    'bleeding', 'hemorrhage', 'trauma', 'head injury', 'traumatic injury',
+    'fall', 'fallen', 'fracture', 'broken bone',
+    'overdose', 'od', 'poisoning', 'allergic reaction', 'anaphylaxis',
+    'diabetic emergency', 'hypoglycemia', 'hyperglycemia',
+    'abdominal pain', 'chest discomfort', 'respiratory',
+    'burn', 'burns', 'choking', 'obstructed airway',
+    'gunshot', 'gsw', 'stabbing', 'penetrating trauma',
+    'altered mental status', 'ams', 'confusion'
   ];
   
   const lowerSummary = summary.toLowerCase();
+  const foundKeywords: string[] = [];
   
-  // Find first matching keyword
+  // Find ALL matching keywords (avoiding duplicates)
   for (const keyword of medicalKeywords) {
     if (lowerSummary.includes(keyword)) {
-      // Capitalize first letter of each word
-      return keyword.split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      // Format based on whether it's an acronym or regular term
+      const capitalized = keyword.split(' ')
+        .map(word => {
+          // Keep acronyms uppercase
+          if (acronyms.has(word.toLowerCase())) {
+            return word.toUpperCase();
+          }
+          // Capitalize first letter of regular words
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        })
         .join(' ');
+      
+      // Avoid adding similar terms (e.g., "fall" and "fallen")
+      const isDuplicate = foundKeywords.some(existing => 
+        existing.toLowerCase().includes(keyword) || keyword.includes(existing.toLowerCase())
+      );
+      
+      if (!isDuplicate) {
+        foundKeywords.push(capitalized);
+      }
     }
   }
   
-  // If no keyword match, extract first sentence or first 50 chars
+  // Return all found keywords separated by bullet point
+  if (foundKeywords.length > 0) {
+    return foundKeywords.join(' • ');
+  }
+  
+  // If no keyword match, extract first sentence or first 60 chars
   const firstSentence = summary.split(/[.!?]/)[0].trim();
   if (firstSentence.length > 0 && firstSentence.length <= 60) {
     return firstSentence;
   }
   
-  // Fallback: use first 50 characters
-  return summary.substring(0, 50).trim() + (summary.length > 50 ? '...' : '');
+  // Fallback: use first 60 characters
+  return summary.substring(0, 60).trim() + (summary.length > 60 ? '...' : '');
 }
 
 export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
