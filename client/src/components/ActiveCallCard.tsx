@@ -65,7 +65,7 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
         </span>
       </div>
       {/* Summary */}
-      <div className="text-foreground/80 line-clamp-3 text-[18px]" data-testid={`text-summary-${call.id}`}>
+      <div className="text-foreground/80 text-[18px]" data-testid={`text-summary-${call.id}`}>
         {cleanSummary}
       </div>
     </Card>
