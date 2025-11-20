@@ -1,8 +1,8 @@
-# Hospital Dispatch Dashboard
+# Helicopter Tracking Dashboard
 
 ## Overview
 
-A real-time emergency dispatch call monitoring dashboard designed for TV display. The application fetches dispatch call data from a NocoDB backend and presents it in a large-format, mission-critical interface optimized for viewing from a distance. Built with React, Express, and Tailwind CSS, following Fluent Design principles and healthcare dashboard patterns.
+A real-time helicopter tracking dashboard designed for emergency dispatch and TV display. The application fetches live helicopter data from FlightRadar24 API and displays it on an interactive map of Indianapolis. Built with React, Express, Leaflet, and Tailwind CSS in dark mode for optimal night viewing and TV display.
 
 ## User Preferences
 
@@ -24,37 +24,38 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**:
 - TanStack Query (React Query) for server state management
-- Auto-refresh every 15 seconds for real-time updates
-- Client-side sorting by timestamp (descending) ensures most recent calls always appear first
-- Local state with React hooks for UI interactions and new call animations
+- Auto-refresh every 15 seconds for real-time helicopter position updates
+- Local state with React hooks for UI interactions
 
 **Design Philosophy**:
 - TV-optimized typography (large text sizes: 24-96px)
-- High contrast colors for status indicators (critical/high/medium/low priority)
-- Fluent Design patterns with healthcare-specific considerations
+- Dark theme for optimal night viewing in emergency dispatch centers
+- High contrast colors for visibility from distance
 - 16:9 aspect ratio optimization
-- Custom fonts: Inter for UI, Roboto Mono for timestamps and IDs
+- Custom fonts: Inter for UI, Roboto Mono for timestamps
 
 **Key Components**:
-- `DashboardHeader`: Fixed header with live clock and connection status
-- `ActiveCallCard`: Large-format cards for recent emergency calls
-- `CallHistoryTable`: Sortable table for older calls
-- `StatusBadge` and `PriorityBadge`: Color-coded status indicators
+- `HelicopterTracker`: Main page with header, map, and footer
+- `HelicopterMap`: Interactive Leaflet map with helicopter markers
+- Header: Shows helicopter count, last update time, and connection status
+- Helicopter markers: Red circular icons with rotation based on heading, clickable popups with flight details
 
 ### Backend Architecture
 
 **Server Framework**: Express.js with TypeScript running on Node.js.
 
 **API Design**: RESTful endpoint architecture:
-- `GET /api/dispatch-calls`: Fetches all dispatch calls from NocoDB
-- Supports both table ID and view ID configurations
+- `GET /api/helicopters`: Fetches live helicopters in Indianapolis area from FlightRadar24
+- Uses Bearer token authentication with FlightRadar24 API
+- Filters for helicopter aircraft types within Indianapolis bounding box
 - Returns parsed and validated JSON using Zod schemas
+- Includes timeout handling (10s) and rate limit error handling
 
 **Data Flow**:
-1. Client requests data every 15 seconds
-2. Server proxies request to NocoDB API with authentication
-3. Response validated against Zod schema
-4. Transformed data returned to client
+1. Client requests helicopter data every 15 seconds
+2. Server makes authenticated request to FlightRadar24 API
+3. Response filtered and transformed to helicopter schema
+4. Invalid entries skipped, valid helicopters returned to client
 
 **Development Mode**: Vite middleware integration for hot module replacement (HMR) and development server.
 

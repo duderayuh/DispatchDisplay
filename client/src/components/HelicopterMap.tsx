@@ -123,6 +123,11 @@ export function HelicopterMap({ helicopters }: HelicopterMapProps) {
         icon: helicopterIcon,
       }).bindPopup(popupContent);
 
+      // Open popup on marker click
+      marker.on('click', function() {
+        marker.openPopup();
+      });
+
       markersLayer.current.addLayer(marker);
     });
   }, [helicopters]);

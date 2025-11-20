@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // FlightRadar24 API endpoint for live flight positions
       const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
 
-      // Make request to FlightRadar24 API
+      // Make request to FlightRadar24 API with timeout
       const response = await axios.get(apiUrl, {
         headers: {
           'Accept': 'application/json',
@@ -115,6 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Filter for helicopters using common helicopter ICAO codes
           aircraft_type: 'H60,EC35,EC45,BK17,AS50,B06,B429,B407,B412,MD50,MD60,R44,R66,S76',
         },
+        timeout: 10000, // 10 second timeout
       });
 
       // Transform FlightRadar24 response to our helicopter schema
@@ -142,12 +143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             helicopterSchema.parse(helicopter);
             helicopters.push(helicopter);
           } catch (error) {
-            // Skip invalid entries
-            console.warn(`Skipping invalid helicopter data for flight ${flightId}:`, error);
+            // Skip invalid entries silently (don't flood logs)
+            continue;
           }
         }
       }
 
+      // Return empty array if no helicopters found (not an error)
       res.json(helicopters);
     } catch (error) {
       console.error("Error fetching helicopters from FlightRadar24:", error);
@@ -156,6 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.response?.status === 401 || error.response?.status === 403) {
           return res.status(401).json({
             error: "Authentication failed: Invalid FlightRadar24 API key",
+          });
+        }
+        if (error.response?.status === 429) {
+          return res.status(429).json({
+            error: "Rate limit exceeded: Too many requests to FlightRadar24 API",
+          });
+        }
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          return res.status(504).json({
+            error: "FlightRadar24 API timeout: Request took too long",
           });
         }
         return res.status(error.response?.status || 500).json({
