@@ -7,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PriorityBadge } from "./PriorityBadge";
-import { StatusBadge } from "./StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import type { DispatchCall } from "@shared/schema";
 import { format } from "date-fns";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
@@ -17,7 +16,7 @@ interface CallHistoryTableProps {
   calls: DispatchCall[];
 }
 
-type SortKey = "time" | "id" | "priority" | "location" | "type" | "status" | "unit";
+type SortKey = "time" | "id" | "summary";
 type SortDirection = "asc" | "desc" | null;
 
 export function CallHistoryTable({ calls }: CallHistoryTableProps) {
@@ -34,9 +33,25 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
     }
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    try {
+      const date = new Date(dateString);
+      return format(date, "MMM dd, yyyy");
+    } catch {
+      return "—";
+    }
+  };
+
+  const truncateSummary = (summary?: string, maxLength = 100) => {
+    if (!summary) return "No summary available";
+    const cleaned = summary.replace(/^["']|["']$/g, '');
+    if (cleaned.length <= maxLength) return cleaned;
+    return cleaned.substring(0, maxLength) + "...";
+  };
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
-      // Cycle through: asc -> desc -> null
       if (sortDirection === "asc") {
         setSortDirection("desc");
       } else if (sortDirection === "desc") {
@@ -58,33 +73,16 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
 
       switch (sortKey) {
         case "time":
-          aVal = new Date(a.DispatchTime || a.CreatedAt || 0).getTime();
-          bVal = new Date(b.DispatchTime || b.CreatedAt || 0).getTime();
+          aVal = new Date(a.timestamp || 0).getTime();
+          bVal = new Date(b.timestamp || 0).getTime();
           break;
         case "id":
-          aVal = a.CallNumber || a.Id;
-          bVal = b.CallNumber || b.Id;
+          aVal = a.id;
+          bVal = b.id;
           break;
-        case "priority":
-          const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-          aVal = priorityOrder[a.Priority?.toLowerCase() as keyof typeof priorityOrder] ?? 999;
-          bVal = priorityOrder[b.Priority?.toLowerCase() as keyof typeof priorityOrder] ?? 999;
-          break;
-        case "location":
-          aVal = a.Location || a.Address || "";
-          bVal = b.Location || b.Address || "";
-          break;
-        case "type":
-          aVal = a.CallType || "";
-          bVal = b.CallType || "";
-          break;
-        case "status":
-          aVal = a.Status || "";
-          bVal = b.Status || "";
-          break;
-        case "unit":
-          aVal = a.Unit || a.UnitAssigned || "";
-          bVal = b.Unit || b.UnitAssigned || "";
+        case "summary":
+          aVal = a.conversation_analysis?.summary || "";
+          bVal = b.conversation_analysis?.summary || "";
           break;
         default:
           return 0;
@@ -145,54 +143,17 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
                 <SortIcon columnKey="id" />
               </div>
             </TableHead>
-            <TableHead
-              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
-              onClick={() => handleSort("priority")}
-              data-testid="header-priority"
-            >
-              <div className="flex items-center">
-                Priority
-                <SortIcon columnKey="priority" />
-              </div>
+            <TableHead className="text-2xl font-semibold pb-6 text-foreground">
+              Date
             </TableHead>
             <TableHead
               className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
-              onClick={() => handleSort("location")}
-              data-testid="header-location"
+              onClick={() => handleSort("summary")}
+              data-testid="header-summary"
             >
               <div className="flex items-center">
-                Location
-                <SortIcon columnKey="location" />
-              </div>
-            </TableHead>
-            <TableHead
-              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
-              onClick={() => handleSort("type")}
-              data-testid="header-type"
-            >
-              <div className="flex items-center">
-                Type
-                <SortIcon columnKey="type" />
-              </div>
-            </TableHead>
-            <TableHead
-              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
-              onClick={() => handleSort("status")}
-              data-testid="header-status"
-            >
-              <div className="flex items-center">
-                Status
-                <SortIcon columnKey="status" />
-              </div>
-            </TableHead>
-            <TableHead
-              className="text-2xl font-semibold pb-6 text-foreground cursor-pointer hover-elevate select-none"
-              onClick={() => handleSort("unit")}
-              data-testid="header-unit"
-            >
-              <div className="flex items-center">
-                Unit
-                <SortIcon columnKey="unit" />
+                Summary
+                <SortIcon columnKey="summary" />
               </div>
             </TableHead>
           </TableRow>
@@ -200,30 +161,21 @@ export function CallHistoryTable({ calls }: CallHistoryTableProps) {
         <TableBody>
           {sortedCalls.map((call) => (
             <TableRow
-              key={call.Id}
+              key={call.id}
               className="h-20 border-b border-border hover-elevate"
-              data-testid={`row-call-${call.Id}`}
+              data-testid={`row-call-${call.id}`}
             >
-              <TableCell className="font-mono text-xl tabular-nums" data-testid={`cell-time-${call.Id}`}>
-                {formatDateTime(call.DispatchTime || call.CreatedAt)}
+              <TableCell className="font-mono text-xl tabular-nums" data-testid={`cell-time-${call.id}`}>
+                {formatDateTime(call.timestamp)}
               </TableCell>
-              <TableCell className="text-xl font-semibold" data-testid={`cell-id-${call.Id}`}>
-                {call.CallNumber || `#${call.Id}`}
+              <TableCell className="text-xl font-semibold" data-testid={`cell-id-${call.id}`}>
+                #{call.id}
               </TableCell>
-              <TableCell data-testid={`cell-priority-${call.Id}`}>
-                <PriorityBadge priority={call.Priority} className="text-lg px-4 py-1" />
+              <TableCell className="text-xl" data-testid={`cell-date-${call.id}`}>
+                {formatDate(call.timestamp)}
               </TableCell>
-              <TableCell className="text-xl max-w-md truncate" data-testid={`cell-location-${call.Id}`}>
-                {call.Location || call.Address || "—"}
-              </TableCell>
-              <TableCell className="text-xl" data-testid={`cell-type-${call.Id}`}>
-                {call.CallType || "—"}
-              </TableCell>
-              <TableCell data-testid={`cell-status-${call.Id}`}>
-                <StatusBadge status={call.Status} className="text-lg px-4 py-1" />
-              </TableCell>
-              <TableCell className="text-xl font-semibold" data-testid={`cell-unit-${call.Id}`}>
-                {call.Unit || call.UnitAssigned || "—"}
+              <TableCell className="text-xl max-w-2xl" data-testid={`cell-summary-${call.id}`}>
+                {truncateSummary(call.conversation_analysis?.summary)}
               </TableCell>
             </TableRow>
           ))}

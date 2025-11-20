@@ -1,21 +1,16 @@
 import { z } from "zod";
 
 // Dispatch Call Schema - represents emergency dispatch calls from NocoDB
+// Based on actual API response structure
 export const dispatchCallSchema = z.object({
-  Id: z.number(),
-  CallNumber: z.string().optional(),
-  Priority: z.enum(["Critical", "High", "Medium", "Low"]).optional(),
-  Status: z.enum(["Active", "En Route", "On Scene", "Cleared", "Cancelled"]).optional(),
-  CallType: z.string().optional(),
-  Location: z.string().optional(),
-  Address: z.string().optional(),
-  Unit: z.string().optional(),
-  UnitAssigned: z.string().optional(),
-  DispatchTime: z.string().optional(),
-  Notes: z.string().optional(),
-  CreatedAt: z.string().optional(),
-  UpdatedAt: z.string().optional(),
-});
+  id: z.number(),
+  timestamp: z.string().optional(),
+  conversation_analysis: z.object({
+    summary: z.string().optional(),
+    generatedAt: z.string().optional(),
+  }).optional(),
+  // Allow any additional fields from NocoDB
+}).passthrough();
 
 export type DispatchCall = z.infer<typeof dispatchCallSchema>;
 

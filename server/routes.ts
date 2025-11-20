@@ -19,31 +19,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Determine if we're using a view ID (starts with 'vw') or table ID (starts with 'm')
+      // The NOCODB_TABLE_ID can be either a table ID (m...) or view ID (vw...)
+      // If it's a view ID, we need to use it with the table endpoint
       const isViewId = NOCODB_TABLE_ID.startsWith("vw");
       
-      // Construct NocoDB API URL based on whether it's a view or table
-      let apiUrl: string;
+      // For view IDs, we need to use the table ID with viewId as a query parameter
+      // Table ID for the dispatch calls table
+      const tableId = "meycc68yjf4w0hj";
+      
+      // Construct NocoDB API URL - always use table endpoint
+      const apiUrl = `${NOCODB_BASE_URL}/api/v2/tables/${tableId}/records`;
+
+      // Build query parameters
+      const params: any = {
+        limit: 100,
+        offset: 0,
+      };
+
+      // If NOCODB_TABLE_ID is a view ID, add it as viewId parameter
       if (isViewId) {
-        // For views, we need to use the view-specific endpoint
-        // Format: /api/v2/views/{viewId}/records
-        apiUrl = `${NOCODB_BASE_URL}/api/v2/views/${NOCODB_TABLE_ID}/records`;
-      } else {
-        // For tables, use the standard table endpoint
-        apiUrl = `${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`;
+        params.viewId = NOCODB_TABLE_ID;
       }
 
-      // Fetch data from NocoDB with sorting by most recent first
+      // Fetch data from NocoDB
       const response = await axios.get(apiUrl, {
         headers: {
           "xc-token": NOCODB_API_TOKEN,
         },
-        params: {
-          limit: 100, // Fetch up to 100 records
-          offset: 0,
-          // Only apply sort for table endpoints (views might have their own sorting)
-          ...(isViewId ? {} : { sort: "-CreatedAt" }),
-        },
+        params,
       });
 
       // Validate response structure

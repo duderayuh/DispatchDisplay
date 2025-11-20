@@ -23,20 +23,20 @@ export default function Dashboard() {
     }
   }, [data]);
 
-  const activeCalls = data?.filter(
-    (call) =>
-      call.Status?.toLowerCase() === "active" ||
-      call.Status?.toLowerCase() === "en route" ||
-      call.Status?.toLowerCase() === "on scene"
-  ) || [];
+  // Sort all calls by timestamp descending (most recent first) to ensure consistent ordering
+  const sortedCalls = [...(data || [])].sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0).getTime();
+    const timeB = new Date(b.timestamp || 0).getTime();
+    return timeB - timeA; // Descending order (newest first)
+  });
 
-  const historyCalls = data?.filter(
-    (call) =>
-      call.Status?.toLowerCase() === "cleared" ||
-      call.Status?.toLowerCase() === "cancelled"
-  ) || [];
+  // Show most recent 10 calls as "Recent" (these would be the latest emergency calls)
+  const recentCalls = sortedCalls.slice(0, 10);
+  
+  // Show older calls as history (only if there are more than 10 total)
+  const historyCalls = sortedCalls.slice(10);
 
-  const newCallIds = new Set(data?.map(call => call.Id) || []);
+  const newCallIds = new Set(data?.map(call => call.id) || []);
   const isNewCall = (callId: number) => {
     return !previousCallIds.has(callId) && previousCallIds.size > 0;
   };
@@ -95,45 +95,47 @@ export default function Dashboard() {
         <div className="space-y-12 mt-8">
           <section data-testid="section-active-calls">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-4xl font-bold text-foreground">Active Calls</h2>
+              <h2 className="text-4xl font-bold text-foreground">Recent Dispatch Calls</h2>
               <div className="px-6 py-2 bg-primary text-primary-foreground rounded-full">
                 <span className="text-2xl font-bold tabular-nums" data-testid="text-active-count">
-                  {activeCalls.length}
+                  {recentCalls.length}
                 </span>
               </div>
             </div>
             
-            {activeCalls.length === 0 ? (
+            {recentCalls.length === 0 ? (
               <div className="flex items-center justify-center h-64 bg-card border border-card-border rounded-lg" data-testid="text-no-active-calls">
-                <p className="text-2xl text-muted-foreground">No active calls</p>
+                <p className="text-2xl text-muted-foreground">No recent calls</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {activeCalls.map((call) => (
+                {recentCalls.map((call) => (
                   <ActiveCallCard 
-                    key={call.Id} 
+                    key={call.id} 
                     call={call} 
-                    isNew={isNewCall(call.Id)}
+                    isNew={isNewCall(call.id)}
                   />
                 ))}
               </div>
             )}
           </section>
 
-          <section data-testid="section-call-history">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-4xl font-bold text-foreground">Recent History</h2>
-              <div className="px-6 py-2 bg-muted text-muted-foreground rounded-full">
-                <span className="text-2xl font-bold tabular-nums" data-testid="text-history-count">
-                  {historyCalls.length}
-                </span>
+          {historyCalls.length > 0 && (
+            <section data-testid="section-call-history">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-4xl font-bold text-foreground">Older Calls</h2>
+                <div className="px-6 py-2 bg-muted text-muted-foreground rounded-full">
+                  <span className="text-2xl font-bold tabular-nums" data-testid="text-history-count">
+                    {historyCalls.length}
+                  </span>
+                </div>
               </div>
-            </div>
-            
-            <div className="bg-card border border-card-border rounded-lg p-6">
-              <CallHistoryTable calls={historyCalls.slice(0, 10)} />
-            </div>
-          </section>
+              
+              <div className="bg-card border border-card-border rounded-lg p-6">
+                <CallHistoryTable calls={historyCalls} />
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
