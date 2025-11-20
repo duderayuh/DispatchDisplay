@@ -1,12 +1,47 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileText } from "lucide-react";
+import { Clock } from "lucide-react";
 import type { DispatchCall } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 interface ActiveCallCardProps {
   call: DispatchCall;
   isNew?: boolean;
+}
+
+// Extract chief complaint from summary using AI/pattern matching
+function extractChiefComplaint(summary: string): string {
+  if (!summary) return "Emergency Call";
+  
+  // Common medical emergency keywords to prioritize
+  const medicalKeywords = [
+    'chest pain', 'difficulty breathing', 'unconscious', 'cardiac arrest',
+    'stroke', 'seizure', 'bleeding', 'trauma', 'fall', 'accident',
+    'overdose', 'allergic reaction', 'diabetic', 'heart attack',
+    'shortness of breath', 'respiratory', 'injury', 'fracture',
+    'abdominal pain', 'head injury', 'burn', 'choking'
+  ];
+  
+  const lowerSummary = summary.toLowerCase();
+  
+  // Find first matching keyword
+  for (const keyword of medicalKeywords) {
+    if (lowerSummary.includes(keyword)) {
+      // Capitalize first letter of each word
+      return keyword.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+  }
+  
+  // If no keyword match, extract first sentence or first 50 chars
+  const firstSentence = summary.split(/[.!?]/)[0].trim();
+  if (firstSentence.length > 0 && firstSentence.length <= 60) {
+    return firstSentence;
+  }
+  
+  // Fallback: use first 50 characters
+  return summary.substring(0, 50).trim() + (summary.length > 50 ? '...' : '');
 }
 
 export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
@@ -22,46 +57,39 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
 
   // Extract summary from conversation_analysis
   const summary = call.conversation_analysis?.summary || "No call details available";
-  
-  // Clean up the summary (remove extra quotes if present)
   const cleanSummary = summary.replace(/^["']|["']$/g, '');
+  const chiefComplaint = extractChiefComplaint(cleanSummary);
 
   return (
     <Card
-      className={`p-8 border-l-8 border-l-primary space-y-4 transition-all duration-300 ${
-        isNew ? "animate-pulse" : ""
+      className={`p-4 border-l-4 border-l-primary transition-all duration-300 ${
+        isNew ? "bg-primary/5" : ""
       }`}
       data-testid={`card-active-call-${call.id}`}
     >
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="text-6xl font-bold text-foreground tabular-nums" data-testid={`text-call-number-${call.id}`}>
-              #{call.id}
-            </h2>
-            <Badge className="bg-status-active text-white px-6 py-2 text-xl font-semibold rounded-full">
-              ACTIVE
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2 text-2xl text-foreground font-semibold" data-testid={`text-call-type-${call.id}`}>
-            <FileText className="w-6 h-6 text-muted-foreground" />
-            <span>Emergency Call</span>
-          </div>
+      {/* Compact Header */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-bold text-foreground truncate" data-testid={`text-chief-complaint-${call.id}`}>
+            {chiefComplaint}
+          </h3>
         </div>
+        <Badge className="bg-primary text-primary-foreground px-2 py-0.5 text-xs font-semibold shrink-0">
+          #{call.id}
+        </Badge>
       </div>
 
-      <div className="space-y-3 pt-4 border-t border-border">
-        <div className="flex items-center gap-3" data-testid={`text-dispatch-time-${call.id}`}>
-          <Clock className="w-6 h-6 text-muted-foreground" />
-          <span className="text-xl text-muted-foreground font-mono">
-            Received {formatTimeAgo(call.timestamp)}
-          </span>
-        </div>
+      {/* Timestamp */}
+      <div className="flex items-center gap-2 mb-2" data-testid={`text-dispatch-time-${call.id}`}>
+        <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground font-mono">
+          {formatTimeAgo(call.timestamp)}
+        </span>
+      </div>
 
-        <div className="mt-4 p-6 bg-muted/30 rounded-md" data-testid={`text-summary-${call.id}`}>
-          <p className="text-xl text-foreground leading-relaxed">{cleanSummary}</p>
-        </div>
+      {/* Summary */}
+      <div className="text-sm text-foreground/80 line-clamp-2" data-testid={`text-summary-${call.id}`}>
+        {cleanSummary}
       </div>
     </Card>
   );

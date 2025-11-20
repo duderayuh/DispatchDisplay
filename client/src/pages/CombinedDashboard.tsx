@@ -134,7 +134,7 @@ export default function CombinedDashboard() {
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <div className="flex items-center gap-2">
               <FileText className="w-6 h-6 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">EMS Calls</h2>
+              <h2 className="font-bold text-foreground text-[22px]">EMS Calls</h2>
             </div>
           </div>
 
