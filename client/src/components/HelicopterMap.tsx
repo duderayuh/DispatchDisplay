@@ -227,11 +227,13 @@ export function HelicopterMap({ helicopters }: HelicopterMapProps) {
       }
     });
 
-    // Draw trails
+    // Draw trails - ONLY for currently active helicopters
     if (trailsLayer.current) {
       trailsLayer.current.clearLayers();
 
       helicopterTrails.current.forEach((trail, helicopterId) => {
+        // Only draw trails for helicopters that currently exist
+        if (!currentHelicopterIds.has(helicopterId)) return;
         if (trail.positions.length < 2) return;
 
         // Create gradient trail effect using multiple polylines
