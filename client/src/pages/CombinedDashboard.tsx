@@ -189,7 +189,7 @@ export default function CombinedDashboard() {
 
       {/* Radio Popup Dialog */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
-        <DialogContent className="max-w-2xl h-[600px]" data-testid="dialog-radio">
+        <DialogContent className="max-w-2xl h-[600px] z-[9999]" data-testid="dialog-radio" style={{ zIndex: 9999 }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Radio className="w-5 h-5" />

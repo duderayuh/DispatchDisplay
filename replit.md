@@ -198,8 +198,15 @@ Preferred communication style: Simple, everyday language.
 - Updated logo from Plane icon to Compass icon (guidance/navigation theme)
 - Maintains dark theme for optimal night viewing in dispatch centers
 
+**Radio Stream Integration**:
+- Added radio button in header (top-right) for live dispatch communications
+- Popup dialog (640x608) with embedded iframe from compassionate-connection.up.railway.app
+- High z-index (9999/10000) ensures popup appears above Leaflet map
+- Clean modal interface with backdrop blur and smooth animations
+
 **Technical Implementation**:
 - Fixed apiRequest call signature in ActiveCallCard component
 - Proper caching with TanStack Query (staleTime: Infinity)
 - Loading states while AI extraction in progress
 - Fallback to truncated summary if AI fails
+- Updated Dialog component z-indexes for proper layering above maps
