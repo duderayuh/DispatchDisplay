@@ -2,16 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { HelicopterMap } from "@/components/HelicopterMap";
 import { ActiveCallCard } from "@/components/ActiveCallCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Plane, FileText, Compass } from "lucide-react";
+import { AlertCircle, Plane, FileText, Compass, Radio, X } from "lucide-react";
 import type { Helicopter, DispatchCall } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function CombinedDashboard() {
   const [lastHelicopterUpdate, setLastHelicopterUpdate] = useState<Date>();
   const [lastDispatchUpdate, setLastDispatchUpdate] = useState<Date>();
   const [previousCallIds, setPreviousCallIds] = useState<Set<number>>(new Set());
+  const [isRadioOpen, setIsRadioOpen] = useState(false);
 
   // Fetch helicopters
   const { data: helicopters, isLoading: helicoptersLoading, isError: helicoptersError } = useQuery<Helicopter[]>({
@@ -98,6 +101,16 @@ export default function CombinedDashboard() {
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-[20px] text-foreground">Live</span>
           </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setIsRadioOpen(true)}
+            className="ml-4"
+            data-testid="button-radio-toggle"
+          >
+            <Radio className="w-6 h-6" />
+          </Button>
         </div>
       </header>
       {/* Main Content - Split Layout */}
@@ -173,6 +186,29 @@ export default function CombinedDashboard() {
         <p className="text-[20px] text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
         <p className="text-[20px] text-muted-foreground font-mono">Auto-refresh: 15s</p>
       </footer>
+
+      {/* Radio Popup Dialog */}
+      <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
+        <DialogContent className="max-w-2xl h-[600px]" data-testid="dialog-radio">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Radio className="w-5 h-5" />
+              Radio Stream
+            </DialogTitle>
+            <DialogDescription>
+              Live radio stream for dispatch communications
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 w-full h-full">
+            <iframe
+              src="https://compassionate-connection.up.railway.app/"
+              className="w-full h-full border-0 rounded-md"
+              title="Radio Stream"
+              data-testid="iframe-radio"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
