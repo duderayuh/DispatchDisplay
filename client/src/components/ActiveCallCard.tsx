@@ -53,7 +53,7 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
             {chiefComplaint}
           </h3>
         </div>
-        <Badge className="text-primary-foreground px-3 py-1 font-semibold shrink-0 text-[15px] bg-[#072d52]">
+        <Badge className="text-primary-foreground px-3 py-1 font-semibold shrink-0 bg-[#08325c] text-[16px]">
           #{call.id}
         </Badge>
       </div>
