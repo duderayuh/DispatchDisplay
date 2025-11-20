@@ -3,79 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
 import type { DispatchCall } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ActiveCallCardProps {
   call: DispatchCall;
   isNew?: boolean;
-}
-
-// Extract chief complaint from summary using AI/pattern matching
-// Returns ALL medical keywords found, not just the first one
-function extractChiefComplaint(summary: string): string {
-  if (!summary) return "Emergency Call";
-  
-  // Known medical acronyms that should stay uppercase
-  const acronyms = new Set([
-    'stemi', 'nstemi', 'mi', 'cva', 'od', 'gsw', 'ams', 'gcs'
-  ]);
-  
-  // Common medical emergency keywords to prioritize
-  const medicalKeywords = [
-    'stemi', 'nstemi', 'mi', 'cardiac arrest', 'heart attack',
-    'stroke', 'cva', 'seizure', 'unconscious', 'unresponsive',
-    'chest pain', 'difficulty breathing', 'shortness of breath', 'respiratory distress',
-    'bleeding', 'hemorrhage', 'trauma', 'head injury', 'traumatic injury',
-    'fall', 'fallen', 'fracture', 'broken bone',
-    'overdose', 'od', 'poisoning', 'allergic reaction', 'anaphylaxis',
-    'diabetic emergency', 'hypoglycemia', 'hyperglycemia',
-    'abdominal pain', 'chest discomfort', 'respiratory',
-    'burn', 'burns', 'choking', 'obstructed airway',
-    'gunshot', 'gsw', 'stabbing', 'penetrating trauma',
-    'altered mental status', 'ams', 'confusion'
-  ];
-  
-  const lowerSummary = summary.toLowerCase();
-  const foundKeywords: string[] = [];
-  
-  // Find ALL matching keywords (avoiding duplicates)
-  for (const keyword of medicalKeywords) {
-    if (lowerSummary.includes(keyword)) {
-      // Format based on whether it's an acronym or regular term
-      const capitalized = keyword.split(' ')
-        .map(word => {
-          // Keep acronyms uppercase
-          if (acronyms.has(word.toLowerCase())) {
-            return word.toUpperCase();
-          }
-          // Capitalize first letter of regular words
-          return word.charAt(0).toUpperCase() + word.slice(1);
-        })
-        .join(' ');
-      
-      // Avoid adding similar terms (e.g., "fall" and "fallen")
-      const isDuplicate = foundKeywords.some(existing => 
-        existing.toLowerCase().includes(keyword) || keyword.includes(existing.toLowerCase())
-      );
-      
-      if (!isDuplicate) {
-        foundKeywords.push(capitalized);
-      }
-    }
-  }
-  
-  // Return all found keywords separated by bullet point
-  if (foundKeywords.length > 0) {
-    return foundKeywords.join(' • ');
-  }
-  
-  // If no keyword match, extract first sentence or first 60 chars
-  const firstSentence = summary.split(/[.!?]/)[0].trim();
-  if (firstSentence.length > 0 && firstSentence.length <= 60) {
-    return firstSentence;
-  }
-  
-  // Fallback: use first 60 characters
-  return summary.substring(0, 60).trim() + (summary.length > 60 ? '...' : '');
 }
 
 export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
@@ -92,7 +25,19 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
   // Extract summary from conversation_analysis
   const summary = call.conversation_analysis?.summary || "No call details available";
   const cleanSummary = summary.replace(/^["']|["']$/g, '');
-  const chiefComplaint = extractChiefComplaint(cleanSummary);
+
+  // Use AI to extract chief complaints
+  const { data: aiResponse, isLoading } = useQuery<{ chiefComplaint: string }>({
+    queryKey: ['/api/extract-chief-complaint', call.id],
+    queryFn: async () => {
+      const response = await apiRequest('POST', '/api/extract-chief-complaint', { summary: cleanSummary });
+      return response.json();
+    },
+    staleTime: Infinity, // Cache forever - chief complaints don't change
+    enabled: !!cleanSummary && cleanSummary !== "No call details available",
+  });
+
+  const chiefComplaint = aiResponse?.chiefComplaint || (isLoading ? "Loading..." : cleanSummary.substring(0, 60).trim() + (cleanSummary.length > 60 ? '...' : ''));
 
   return (
     <Card

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import axios from "axios";
 import { nocoDBResponseSchema, helicopterSchema, type Helicopter } from "@shared/schema";
+import OpenAI from "openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // NocoDB Configuration from environment variables
@@ -225,6 +226,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Failed to fetch helicopters",
         details: error instanceof Error ? error.message : "Unknown error",
       });
+    }
+  });
+
+  // AI endpoint to extract chief complaints from call summaries
+  app.post("/api/extract-chief-complaint", async (req, res) => {
+    try {
+      const { summary } = req.body;
+
+      if (!summary || typeof summary !== 'string') {
+        return res.status(400).json({
+          error: "Missing or invalid 'summary' in request body",
+        });
+      }
+
+      // Initialize OpenAI client with Replit AI Integrations
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      // Use AI to extract chief complaints
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a medical dispatch assistant. Extract ALL chief complaints from the emergency call summary.
+
+Rules:
+1. Extract ALL medical conditions/complaints mentioned, not just the primary one
+2. Use standard medical terminology and acronyms (STEMI, MI, CVA, OD, GSW, AMS, etc.)
+3. Keep acronyms in UPPERCASE (STEMI not Stemi, MI not Mi)
+4. Separate multiple complaints with bullet points (•)
+5. Be concise - 2-4 words per complaint maximum
+6. If trauma mechanism mentioned (fall, MVA, GSW), include it
+7. Include severity indicators if mentioned (STEMI vs chest pain, unresponsive vs altered)
+
+Examples:
+- Input: "71-year-old with chest pain and fall" → Output: "Chest Pain • Fall"
+- Input: "STEMI alert, patient fell at home" → Output: "STEMI • Fall"
+- Input: "76-year-old with stroke symptoms and difficulty breathing" → Output: "CVA • Respiratory Distress"
+- Input: "Gunshot wound to chest, unresponsive" → Output: "GSW • Unresponsive"
+
+Extract ONLY the chief complaints, nothing else.`
+          },
+          {
+            role: "user",
+            content: summary
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 100,
+      });
+
+      const chiefComplaint = completion.choices[0]?.message?.content?.trim() || "Emergency Call";
+
+      res.json({ chiefComplaint });
+    } catch (error) {
+      console.error("Error extracting chief complaint:", error);
+      
+      // Fallback to first 60 characters if AI fails
+      const summary = req.body.summary || "";
+      const fallback = summary.substring(0, 60).trim() + (summary.length > 60 ? '...' : '') || "Emergency Call";
+      
+      res.json({ chiefComplaint: fallback });
     }
   });
 

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HelicopterMap } from "@/components/HelicopterMap";
 import { ActiveCallCard } from "@/components/ActiveCallCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Plane, FileText } from "lucide-react";
+import { AlertCircle, Plane, FileText, Compass } from "lucide-react";
 import type { Helicopter, DispatchCall } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -65,10 +65,9 @@ export default function CombinedDashboard() {
       <header className="h-20 bg-card border-b border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="header-combined">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-4">
-            <Plane className="w-10 h-10 text-primary" />
+            <Compass className="w-10 h-10 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold text-foreground leading-tight">Methodist Hospital</h1>
-              <p className="text-[20px] text-muted-foreground">Emergency Tracking System</p>
+              <h1 className="text-3xl font-bold text-foreground leading-tight">IU Methodist - EMS Dashboard</h1>
             </div>
           </div>
         </div>

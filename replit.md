@@ -1,8 +1,8 @@
-# Methodist Hospital Emergency Tracking System
+# IU Methodist - EMS Dashboard
 
 ## Overview
 
-A comprehensive real-time tracking system combining helicopter monitoring and emergency dispatch call management for Methodist Hospital. The application features two integrated dashboards: (1) Live helicopter tracking with smooth animations and flight path trails using FlightRadar24 API, and (2) Emergency dispatch call monitoring from NocoDB. Built with React, Express, Leaflet, and Tailwind CSS in dark mode for optimal night viewing and TV display.
+A comprehensive real-time tracking system combining helicopter monitoring and emergency dispatch call management for IU Methodist Hospital Indianapolis. The application features a split-screen dashboard: (1) Live helicopter tracking with smooth animations and flight path trails using FlightRadar24 API, and (2) Emergency dispatch call monitoring from NocoDB with AI-powered chief complaint extraction. Built with React, Express, OpenAI, and Tailwind CSS in dark mode for optimal night viewing and TV display.
 
 ## User Preferences
 
@@ -42,12 +42,13 @@ Preferred communication style: Simple, everyday language.
 - Fixed at top with z-index 50 for always-visible navigation
 
 **Key Components**:
-- `Navigation`: Top bar for switching between Helicopter Tracker and Dispatch Dashboard
-- `HelicopterTracker`: Main helicopter tracking page with status bar and map
+- `CombinedDashboard`: Split-screen main page combining helicopter map (left) and EMS calls (right)
 - `HelicopterMap`: Interactive Leaflet map with smooth marker animations and beautiful trails
-- `Dashboard`: Emergency dispatch call monitoring page with recent calls and history
-- `ActiveCallCard`: Large-format cards for recent emergency dispatch calls
-- `CallHistoryTable`: Sortable table for older dispatch calls
+- `ActiveCallCard`: Large-format cards for emergency dispatch calls with AI-extracted chief complaints
+  - Uses OpenAI GPT-4o-mini via Replit AI Integrations to extract concise medical terminology
+  - Displays ALL chief complaints separated by bullet points (•)
+  - Preserves uppercase medical acronyms (STEMI, MI, CVA, OD, GSW, AMS)
+  - Examples: "STEMI • Fall", "CVA • Left-Sided Weakness", "GSW • Unresponsive"
 
 **Helicopter Tracking Features**:
 - Smooth marker animations: Helicopters glide smoothly between positions over 1.5 seconds using requestAnimationFrame interpolation
@@ -67,10 +68,19 @@ Preferred communication style: Simple, everyday language.
 
 **API Design**: RESTful endpoint architecture:
 - `GET /api/helicopters`: Fetches live helicopters in Indianapolis area from FlightRadar24
-- Uses Bearer token authentication with FlightRadar24 API
-- Filters for helicopter aircraft types within Indianapolis bounding box
-- Returns parsed and validated JSON using Zod schemas
-- Includes timeout handling (10s) and rate limit error handling
+  - Uses Bearer token authentication with FlightRadar24 API
+  - Filters for helicopter aircraft types within Indianapolis bounding box
+  - Returns parsed and validated JSON using Zod schemas
+  - Includes timeout handling (10s) and rate limit error handling
+- `GET /api/dispatch-calls`: Fetches emergency dispatch calls from NocoDB
+  - Returns list of calls with conversation_analysis containing summaries
+- `POST /api/extract-chief-complaint`: AI-powered chief complaint extraction
+  - Accepts call summary text in request body
+  - Uses OpenAI GPT-4o-mini to extract concise medical terminology
+  - Returns ALL medical conditions/complaints (not just primary)
+  - Preserves uppercase acronyms (STEMI, MI, CVA, OD, GSW, AMS)
+  - Separates multiple conditions with bullet points (•)
+  - Caches results forever on client (staleTime: Infinity)
 
 **Data Flow**:
 1. Client requests helicopter data every 15 seconds
@@ -119,6 +129,11 @@ Preferred communication style: Simple, everyday language.
 - `NOCODB_API_TOKEN`: Authentication token
 - `NOCODB_TABLE_ID`: View/table identifier
 
+**OpenAI Authentication**: Uses Replit AI Integrations for OpenAI access
+- API key and base URL provided via environment variables
+- Billed to Replit credits (no separate OpenAI API key needed)
+- Environment variables: `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`
+
 **No User Authentication**: Application designed for public display (TV dashboard), no user login required.
 
 ## External Dependencies
@@ -142,9 +157,13 @@ Preferred communication style: Simple, everyday language.
 
 **Data Management**:
 - `@tanstack/react-query`: Server state management and caching
-- `axios`: HTTP client for NocoDB API requests
+- `axios`: HTTP client for API requests
 - `zod`: Schema validation and type inference
 - `drizzle-orm`: Type-safe ORM (configured but not actively used)
+
+**AI Integration**:
+- `openai`: OpenAI client library for GPT-4o-mini
+- Replit AI Integrations: Managed OpenAI access without separate API keys
 
 **Date Handling**:
 - `date-fns`: Date formatting and manipulation
@@ -156,6 +175,31 @@ Preferred communication style: Simple, everyday language.
 - Replit-specific plugins for runtime error overlay and cartographer
 
 **Deployment**:
-- Designed for Railway with GitHub integration
-- Environment variables for configuration
+- Designed for Replit deployment with environment variables
+- Required secrets:
+  - `FLIGHTRADAR24_API_KEY`: FlightRadar24 API authentication
+  - `NOCODB_BASE_URL`, `NOCODB_API_TOKEN`, `NOCODB_TABLE_ID`: NocoDB connection
+  - `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`: Replit AI Integrations
+  - `SESSION_SECRET`: Session management (optional)
 - Production build creates optimized static assets
+
+## Recent Changes (November 2025)
+
+**AI-Powered Chief Complaint Extraction**:
+- Implemented OpenAI GPT-4o-mini integration via Replit AI Integrations
+- Added `/api/extract-chief-complaint` endpoint for intelligent medical terminology extraction
+- Chief complaints now show ALL medical conditions (not just first one)
+- Multiple conditions separated by bullet points (•)
+- Medical acronyms preserved in uppercase (STEMI, MI, CVA, OD, GSW, AMS)
+- Examples: "STEMI • Fall • Dementia", "CVA • Left-Sided Weakness", "Difficulty Breathing • PVCs"
+
+**Branding Update**:
+- Changed from "Methodist Hospital" to "IU Methodist - EMS Dashboard"
+- Updated logo from Plane icon to Compass icon (guidance/navigation theme)
+- Maintains dark theme for optimal night viewing in dispatch centers
+
+**Technical Implementation**:
+- Fixed apiRequest call signature in ActiveCallCard component
+- Proper caching with TanStack Query (staleTime: Infinity)
+- Loading states while AI extraction in progress
+- Fallback to truncated summary if AI fails
