@@ -57,7 +57,6 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
           #{call.id}
         </Badge>
       </div>
-
       {/* Timestamp */}
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -65,9 +64,8 @@ export function ActiveCallCard({ call, isNew = false }: ActiveCallCardProps) {
           {formatTimeAgo(call.timestamp)}
         </span>
       </div>
-
       {/* Summary */}
-      <div className="text-xl text-foreground/80 line-clamp-3 leading-relaxed" data-testid={`text-summary-${call.id}`}>
+      <div className="text-foreground/80 line-clamp-3 text-[18px]" data-testid={`text-summary-${call.id}`}>
         {cleanSummary}
       </div>
     </Card>
