@@ -27,3 +27,21 @@ export const nocoDBResponseSchema = z.object({
 });
 
 export type NocoDBResponse = z.infer<typeof nocoDBResponseSchema>;
+
+// FlightRadar24 Helicopter Schema
+export const helicopterSchema = z.object({
+  id: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  altitude: z.number().nullable().optional(),
+  heading: z.number().nullable().optional(),
+  speed: z.number().nullable().optional(),
+  callsign: z.string().nullable().optional(),
+  registration: z.string().nullable().optional(),
+  aircraftType: z.string().nullable().optional(),
+  origin: z.string().nullable().optional(),
+  destination: z.string().nullable().optional(),
+  lastUpdate: z.number().optional(),
+});
+
+export type Helicopter = z.infer<typeof helicopterSchema>;

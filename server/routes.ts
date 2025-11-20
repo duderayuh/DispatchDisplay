@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import axios from "axios";
-import { nocoDBResponseSchema } from "@shared/schema";
+import { nocoDBResponseSchema, helicopterSchema, type Helicopter } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // NocoDB Configuration from environment variables
@@ -75,6 +75,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(500).json({
         error: "Failed to fetch dispatch calls",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Endpoint to fetch helicopters from FlightRadar24 API in Indianapolis area
+  app.get("/api/helicopters", async (req, res) => {
+    try {
+      const FR24_API_KEY = process.env.FLIGHTRADAR24_API_KEY;
+
+      if (!FR24_API_KEY) {
+        return res.status(500).json({
+          error: "Server configuration error: Missing FlightRadar24 API key",
+        });
+      }
+
+      // Indianapolis bounding box (approximate coordinates)
+      // North: 39.93, South: 39.63, West: -86.33, East: -85.93
+      const bounds = {
+        north: 39.93,
+        south: 39.63,
+        west: -86.33,
+        east: -85.93,
+      };
+
+      // FlightRadar24 API endpoint for live flight positions
+      const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
+
+      // Make request to FlightRadar24 API
+      const response = await axios.get(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Version': 'v1',
+          'Authorization': `Bearer ${FR24_API_KEY}`,
+        },
+        params: {
+          bounds: `${bounds.north},${bounds.south},${bounds.west},${bounds.east}`,
+          // Filter for helicopters using common helicopter ICAO codes
+          aircraft_type: 'H60,EC35,EC45,BK17,AS50,B06,B429,B407,B412,MD50,MD60,R44,R66,S76',
+        },
+      });
+
+      // Transform FlightRadar24 response to our helicopter schema
+      const helicopters: Helicopter[] = [];
+
+      if (response.data && response.data.data) {
+        for (const [flightId, flightData] of Object.entries(response.data.data as Record<string, any>)) {
+          try {
+            const helicopter: Helicopter = {
+              id: flightId,
+              latitude: flightData.lat || flightData.latitude,
+              longitude: flightData.lon || flightData.longitude,
+              altitude: flightData.alt || flightData.altitude,
+              heading: flightData.track || flightData.heading,
+              speed: flightData.spd || flightData.speed,
+              callsign: flightData.callsign || flightData.flight,
+              registration: flightData.reg || flightData.registration,
+              aircraftType: flightData.type || flightData.aircraft_code,
+              origin: flightData.origin,
+              destination: flightData.destination,
+              lastUpdate: Date.now(),
+            };
+
+            // Validate against schema
+            helicopterSchema.parse(helicopter);
+            helicopters.push(helicopter);
+          } catch (error) {
+            // Skip invalid entries
+            console.warn(`Skipping invalid helicopter data for flight ${flightId}:`, error);
+          }
+        }
+      }
+
+      res.json(helicopters);
+    } catch (error) {
+      console.error("Error fetching helicopters from FlightRadar24:", error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          return res.status(401).json({
+            error: "Authentication failed: Invalid FlightRadar24 API key",
+          });
+        }
+        return res.status(error.response?.status || 500).json({
+          error: `FlightRadar24 API error: ${error.message}`,
+        });
+      }
+
+      res.status(500).json({
+        error: "Failed to fetch helicopters",
         details: error instanceof Error ? error.message : "Unknown error",
       });
     }
