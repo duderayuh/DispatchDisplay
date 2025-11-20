@@ -120,7 +120,7 @@ export default function CombinedDashboard() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Plane className="w-6 h-6 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">Helicopter Tracker</h2>
+              <h2 className="font-bold text-foreground text-[22px]">Helicopter Tracker</h2>
             </div>
             <p className="text-muted-foreground text-[18px]">Indianapolis, IN</p>
           </div>
