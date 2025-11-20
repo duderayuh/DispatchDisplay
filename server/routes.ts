@@ -19,8 +19,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Construct NocoDB API URL
-      const apiUrl = `${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`;
+      // Determine if we're using a view ID (starts with 'vw') or table ID (starts with 'm')
+      const isViewId = NOCODB_TABLE_ID.startsWith("vw");
+      
+      // Construct NocoDB API URL based on whether it's a view or table
+      let apiUrl: string;
+      if (isViewId) {
+        // For views, we need to use the view-specific endpoint
+        // Format: /api/v2/views/{viewId}/records
+        apiUrl = `${NOCODB_BASE_URL}/api/v2/views/${NOCODB_TABLE_ID}/records`;
+      } else {
+        // For tables, use the standard table endpoint
+        apiUrl = `${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`;
+      }
 
       // Fetch data from NocoDB with sorting by most recent first
       const response = await axios.get(apiUrl, {
@@ -30,7 +41,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         params: {
           limit: 100, // Fetch up to 100 records
           offset: 0,
-          sort: "-CreatedAt", // Sort by CreatedAt descending (most recent first)
+          // Only apply sort for table endpoints (views might have their own sorting)
+          ...(isViewId ? {} : { sort: "-CreatedAt" }),
         },
       });
 
@@ -50,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         if (error.response?.status === 404) {
           return res.status(404).json({
-            error: "Table not found: Invalid NocoDB table ID",
+            error: "Resource not found: Invalid NocoDB table/view ID",
           });
         }
         return res.status(error.response?.status || 500).json({
