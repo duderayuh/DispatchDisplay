@@ -4,7 +4,7 @@ import { ActiveCallCard } from "@/components/ActiveCallCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Plane, FileText, Compass, Radio, X } from "lucide-react";
 import type { Helicopter, DispatchCall } from "@shared/schema";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,6 @@ export default function CombinedDashboard() {
   const [lastDispatchUpdate, setLastDispatchUpdate] = useState<Date>();
   const [previousCallIds, setPreviousCallIds] = useState<Set<number>>(new Set());
   const [isRadioOpen, setIsRadioOpen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hiddenContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch helicopters
   const { data: helicopters, isLoading: helicoptersLoading, isError: helicoptersError } = useQuery<Helicopter[]>({
@@ -64,23 +61,6 @@ export default function CombinedDashboard() {
   }, [dispatchCalls]);
 
   const helicopterCount = helicopters?.length || 0;
-
-  // Move iframe between visible and hidden containers to keep it loaded
-  useEffect(() => {
-    if (iframeRef.current && containerRef.current && hiddenContainerRef.current) {
-      if (isRadioOpen) {
-        // Move iframe to visible dialog container
-        if (iframeRef.current.parentElement !== containerRef.current) {
-          containerRef.current.appendChild(iframeRef.current);
-        }
-      } else {
-        // Move iframe back to hidden container
-        if (iframeRef.current.parentElement !== hiddenContainerRef.current) {
-          hiddenContainerRef.current.appendChild(iframeRef.current);
-        }
-      }
-    }
-  }, [isRadioOpen]);
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -207,7 +187,7 @@ export default function CombinedDashboard() {
         <p className="text-[20px] text-muted-foreground font-mono">Auto-refresh: 15s</p>
       </footer>
 
-      {/* Radio Popup Dialog - iframe stays mounted for continuous audio */}
+      {/* Radio Popup Dialog */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
         <DialogContent className="w-[640px] max-w-[640px] h-auto max-h-[90vh] p-0" data-testid="dialog-radio">
           <div className="p-6 pb-0">
@@ -221,18 +201,38 @@ export default function CombinedDashboard() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div ref={containerRef} className="w-[640px] h-[608px] p-6 pt-4">
-            {/* Iframe will be moved here when dialog is open */}
+          <div className="w-[640px] h-[608px] p-6 pt-4">
+            {/* Iframe container when visible in dialog */}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Hidden container for iframe when dialog is closed - keeps audio playing */}
-      <div ref={hiddenContainerRef} className="fixed top-0 left-0 pointer-events-none" style={{ width: '640px', height: '608px', opacity: 0, zIndex: -1 }}>
+      {/* Single persistent iframe - always mounted, CSS controls visibility/position */}
+      <div style={{ 
+        position: 'fixed',
+        width: '640px',
+        height: '608px',
+        // When dialog closed: hide off-screen
+        ...(!isRadioOpen && {
+          top: '-10000px',
+          left: '-10000px',
+        }),
+        // When dialog open: overlay on center of screen with high z-index
+        ...(isRadioOpen && {
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10001, // Above dialog overlay (9999) and content (10000)
+        })
+      }}>
         <iframe
-          ref={iframeRef}
           src="https://compassionate-connection.up.railway.app/"
-          className="w-full h-full border-0 rounded-md"
+          style={{
+            width: '100%',
+            height: '100%',
+            border: '0',
+            borderRadius: '6px',
+          }}
           title="Radio Stream"
           data-testid="iframe-radio"
         />
