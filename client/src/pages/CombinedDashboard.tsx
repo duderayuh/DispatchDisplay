@@ -212,7 +212,8 @@ export default function CombinedDashboard() {
               className="w-full h-[480px] border-0 rounded-md"
               title="Radio Stream"
               data-testid="iframe-radio"
-              allow="autoplay"
+              allow="autoplay; encrypted-media; microphone; fullscreen"
+              allowFullScreen
             />
           </div>
         </DialogContent>
