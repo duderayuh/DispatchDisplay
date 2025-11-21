@@ -11,7 +11,7 @@ export default function HelicopterTracker() {
 
   const { data, isLoading, isError, error } = useQuery<Helicopter[]>({
     queryKey: ["/api/helicopters"],
-    refetchInterval: 15000, // Auto-refresh every 15 seconds
+    refetchInterval: 60000, // Auto-refresh every 60 seconds (server caches for 60s)
     refetchIntervalInBackground: true,
   });
 
@@ -80,7 +80,7 @@ export default function HelicopterTracker() {
       <footer className="fixed bottom-0 left-0 right-0 h-10 bg-card border-t border-card-border px-8 flex items-center justify-between" data-testid="footer-helicopter">
         <p className="text-sm text-muted-foreground">FlightRadar24 Live Tracking - Indianapolis, IN</p>
         <p className="text-sm text-muted-foreground font-mono">
-          Auto-refresh: 15s
+          Auto-refresh: 60s
         </p>
       </footer>
     </div>

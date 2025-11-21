@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HelicopterMap } from "@/components/HelicopterMap";
 import { ActiveCallCard } from "@/components/ActiveCallCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Plane, FileText, Compass, Radio, X } from "lucide-react";
+import { AlertCircle, Plane, FileText, Compass, Radio } from "lucide-react";
 import type { Helicopter, DispatchCall } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -16,10 +16,10 @@ export default function CombinedDashboard() {
   const [previousCallIds, setPreviousCallIds] = useState<Set<number>>(new Set());
   const [isRadioOpen, setIsRadioOpen] = useState(false);
 
-  // Fetch helicopters
+  // Fetch helicopters (60s polling - server caches for 60s, helicopters don't move fast)
   const { data: helicopters, isLoading: helicoptersLoading, isError: helicoptersError } = useQuery<Helicopter[]>({
     queryKey: ["/api/helicopters"],
-    refetchInterval: 15000,
+    refetchInterval: 60000,
     refetchIntervalInBackground: true,
   });
 
@@ -184,57 +184,39 @@ export default function CombinedDashboard() {
       {/* Footer */}
       <footer className="h-12 bg-card border-t border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="footer-combined">
         <p className="text-[20px] text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
-        <p className="text-[20px] text-muted-foreground font-mono">Auto-refresh: 15s</p>
+        <p className="text-[20px] text-muted-foreground font-mono">Helicopters: 60s | Calls: 15s</p>
       </footer>
-      {/* Radio Popup Dialog */}
+      {/* Radio Stream Dialog 
+          Note: Radix Dialog unmounts content when closed, so audio will restart when reopened.
+          This is the correct accessible implementation - keeping the iframe outside the Dialog tree
+          would break screen reader access, keyboard navigation (Escape key), and focus management.
+      */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
-        <DialogContent className="w-[640px] max-w-[640px] h-auto max-h-[90vh] p-0" data-testid="dialog-radio">
-          <div className="p-6 pb-0">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Radio className="w-5 h-5" />
-                Radio Stream
-              </DialogTitle>
-              <DialogDescription>
-                Live radio stream for dispatch communications
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="w-[640px] h-[608px] p-6 pt-4">
-            {/* Iframe container when visible in dialog */}
+        <DialogContent 
+          className="w-[640px] max-w-[640px]" 
+          data-testid="dialog-radio"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Radio className="w-5 h-5" />
+              Radio Stream
+            </DialogTitle>
+            <DialogDescription>
+              Live radio stream for dispatch communications
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="w-full">
+            <iframe
+              src="https://compassionate-connection.up.railway.app/"
+              className="w-full h-[480px] border-0 rounded-md"
+              title="Radio Stream"
+              data-testid="iframe-radio"
+              allow="autoplay"
+            />
           </div>
         </DialogContent>
       </Dialog>
-      {/* Single persistent iframe - always mounted, CSS controls visibility/position */}
-      <div style={{ 
-        position: 'fixed',
-        width: '640px',
-        height: '608px',
-        // When dialog closed: hide off-screen
-        ...(!isRadioOpen && {
-          top: '-10000px',
-          left: '-10000px',
-        }),
-        // When dialog open: overlay on center of screen with high z-index
-        ...(isRadioOpen && {
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 10001, // Above dialog overlay (9999) and content (10000)
-        })
-      }}>
-        <iframe
-          src="https://compassionate-connection.up.railway.app/"
-          style={{
-            width: '100%',
-            height: '100%',
-            border: '0',
-            borderRadius: '6px',
-          }}
-          title="Radio Stream"
-          data-testid="iframe-radio"
-        />
-      </div>
     </div>
   );
 }

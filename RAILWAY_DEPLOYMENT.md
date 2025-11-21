@@ -44,7 +44,7 @@ Set these in Railway dashboard under **Variables** tab:
 | `OPENAI_API_KEY` | OpenAI API key for GPT-4o-mini | https://platform.openai.com/api-keys |
 | `NOCODB_BASE_URL` | NocoDB instance URL | Your NocoDB deployment (e.g., `https://nocodb-production.up.railway.app`) |
 | `NOCODB_API_TOKEN` | NocoDB API authentication token | NocoDB Account Settings → Tokens |
-| `NOCODB_TABLE_ID` | View ID for dispatch calls | `vwwf41cmlhx8atps` (or your custom view ID) |
+| `NOCODB_TABLE_ID` | View ID for dispatch calls | `your_ID_here` (or your custom view ID) |
 | `SESSION_SECRET` | Session encryption key | Generate random string (e.g., `openssl rand -base64 32`) |
 | `NODE_ENV` | Production environment | `production` |
 
@@ -55,7 +55,7 @@ FLIGHTRADAR24_API_KEY=your_fr24_api_key_here
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxx
 NOCODB_BASE_URL=https://nocodb-production-9a14.up.railway.app
 NOCODB_API_TOKEN=your_nocodb_token_here
-NOCODB_TABLE_ID=vwwf41cmlhx8atps
+NOCODB_TABLE_ID=your_ID_here
 SESSION_SECRET=your_random_secret_string_here
 NODE_ENV=production
 ```
@@ -118,7 +118,7 @@ NODE_ENV=production
    railway variables set OPENAI_API_KEY=sk-proj-xxxxx
    railway variables set NOCODB_BASE_URL=https://your-nocodb.railway.app
    railway variables set NOCODB_API_TOKEN=your_token
-   railway variables set NOCODB_TABLE_ID=vwwf41cmlhx8atps
+   railway variables set NOCODB_TABLE_ID=your_ID_here
    railway variables set SESSION_SECRET=$(openssl rand -base64 32)
    railway variables set NODE_ENV=production
    ```
@@ -165,8 +165,8 @@ Your NocoDB table should have:
 
 ### View Configuration
 
-- Default view ID: `vwwf41cmlhx8atps`
-- Default table ID: `meycc68yjf4w0hj`
+- Default view ID: `your_ID_here`
+- Default table ID: `your_ID_here`
 - The app uses view-based filtering for flexible data access
 
 ## Cost Estimates

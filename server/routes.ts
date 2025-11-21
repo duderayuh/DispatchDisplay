@@ -4,6 +4,16 @@ import axios from "axios";
 import { nocoDBResponseSchema, helicopterSchema, type Helicopter } from "@shared/schema";
 import OpenAI from "openai";
 
+// Server-side cache for helicopter data to reduce FlightRadar24 API calls
+interface HelicopterCache {
+  data: Helicopter[];
+  timestamp: number;
+}
+
+let helicopterCache: HelicopterCache | null = null;
+const HELICOPTER_CACHE_TTL_MS = 60000; // 60 seconds cache
+let helicopterFetchPromise: Promise<Helicopter[]> | null = null; // Track in-flight requests
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // NocoDB Configuration from environment variables
   const NOCODB_BASE_URL = process.env.NOCODB_BASE_URL;
@@ -84,119 +94,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to fetch helicopters from FlightRadar24 API in Indianapolis area
   app.get("/api/helicopters", async (req, res) => {
     try {
-      const FR24_API_KEY = process.env.FLIGHTRADAR24_API_KEY;
-
-      if (!FR24_API_KEY) {
-        return res.status(500).json({
-          error: "Server configuration error: Missing FlightRadar24 API key",
-        });
+      // Check cache first - if data is fresh (less than 60s old), return cached data
+      const now = Date.now();
+      if (helicopterCache && (now - helicopterCache.timestamp) < HELICOPTER_CACHE_TTL_MS) {
+        const cacheAge = Math.floor((now - helicopterCache.timestamp) / 1000);
+        console.log(`[Cache HIT] Returning cached helicopter data (${cacheAge}s old, ${helicopterCache.data.length} helicopters)`);
+        return res.json(helicopterCache.data);
       }
 
-      // Indianapolis bounding box (approximate coordinates)
-      // North: 39.93, South: 39.63, West: -86.33, East: -85.93
-      const bounds = {
-        north: 39.93,
-        south: 39.63,
-        west: -86.33,
-        east: -85.93,
-      };
-
-      // FlightRadar24 API endpoint for live flight positions
-      const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
-
-      // Make request to FlightRadar24 API with timeout
-      // Note: We filter helicopters server-side since API filtering parameters vary
-      const response = await axios.get(apiUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Version': 'v1',
-          'Authorization': `Bearer ${FR24_API_KEY}`,
-        },
-        params: {
-          bounds: `${bounds.north},${bounds.south},${bounds.west},${bounds.east}`,
-        },
-        timeout: 10000, // 10 second timeout
-      });
-
-      // Transform FlightRadar24 response to our helicopter schema
-      const helicopters: Helicopter[] = [];
-      let totalAircraft = 0;
-      let filteredOut = 0;
-
-      // Whitelist of known helicopter ICAO designators (exact match, case-insensitive)
-      const helicopterICAOCodes = new Set([
-        'H60', 'H64', 'EC35', 'EC45', 'EC30', 'EC55', 'EC65', 'EC75', 'BK17', 'AS50', 'AS32', 'AS35', 'AS50', 'AS55', 'AS65',
-        'B06', 'B47', 'B429', 'B407', 'B412', 'B505', 'MD50', 'MD60', 'MD90', 'MD52', 'MD11', 'R44', 'R66', 'R22', 
-        'S76', 'S92', 'A109', 'A119', 'A139', 'A169', 'A189', 'MI17', 'MI24', 'MI35', 'UH1', 'AH64', 'CH47', 
-        'ASTR', 'AS32', 'BO05', 'BO06', 'H500', 'H135', 'H145', 'H160', 'H175', 'H225', 'AW09', 'AW19', 'AW39', 'AW59', 'AW69', 'AW89'
-      ]);
-
-      if (response.data && response.data.data) {
-        for (const [flightId, flightData] of Object.entries(response.data.data as Record<string, any>)) {
-          totalAircraft++;
-          
-          try {
-            // Check the correct field for helicopter category
-            const aircraftCategory = flightData.aircraft?.category ?? flightData.detail?.aircraft?.category ?? '';
-            const aircraftType = (flightData.type || flightData.aircraft_code || '').toUpperCase();
-            
-            // Temporary debug logging for first aircraft
-            if (totalAircraft === 1) {
-              console.log('[Debug] Sample aircraft data:', {
-                flightId,
-                category: aircraftCategory,
-                type: aircraftType,
-                rawCategory: flightData.category,
-                aircraftObj: flightData.aircraft,
-                detailObj: flightData.detail
-              });
-            }
-            
-            // Check if this is a helicopter:
-            // 1. Check category field (value 'H' or 'helicopter')
-            // 2. Check exact ICAO code match from whitelist
-            const isCategoryHelicopter = aircraftCategory === 'H' || 
-                                        aircraftCategory === 'h' ||
-                                        aircraftCategory.toLowerCase() === 'helicopter';
-            
-            const isICAOHelicopter = helicopterICAOCodes.has(aircraftType);
-            
-            const isHelicopter = isCategoryHelicopter || isICAOHelicopter;
-            
-            if (!isHelicopter) {
-              filteredOut++;
-              continue; // Skip non-helicopters
-            }
-
-            const helicopter: Helicopter = {
-              id: flightId,
-              latitude: flightData.lat || flightData.latitude,
-              longitude: flightData.lon || flightData.longitude,
-              altitude: flightData.alt || flightData.altitude,
-              heading: flightData.track || flightData.heading,
-              speed: flightData.spd || flightData.speed,
-              callsign: flightData.callsign || flightData.flight,
-              registration: flightData.reg || flightData.registration,
-              aircraftType: flightData.type || flightData.aircraft_code,
-              origin: flightData.origin,
-              destination: flightData.destination,
-              lastUpdate: Date.now(),
-            };
-
-            // Validate against schema
-            helicopterSchema.parse(helicopter);
-            helicopters.push(helicopter);
-          } catch (error) {
-            // Skip invalid entries silently (don't flood logs)
-            continue;
-          }
+      // Check if there's already an in-flight request
+      if (helicopterFetchPromise) {
+        console.log('[In-flight Request] Waiting for existing API call to complete');
+        try {
+          const helicopters = await helicopterFetchPromise;
+          console.log(`[In-flight Request] Resolved with ${helicopters.length} helicopters`);
+          return res.json(helicopters);
+        } catch (error) {
+          console.error('[In-flight Request] Failed - clearing stale cache to force fresh fetch');
+          helicopterCache = null; // Clear stale cache on error to force fresh fetch next time
+          throw error; // Rethrow to be handled by outer try/catch
         }
       }
 
-      // Log filtering stats for debugging
-      console.log(`[Helicopter Filter] Total aircraft: ${totalAircraft}, Filtered out: ${filteredOut}, Helicopters: ${helicopters.length}`);
+      console.log('[Cache MISS] Fetching fresh helicopter data from FlightRadar24 API');
 
-      // Return empty array if no helicopters found (not an error)
+      // Create and store the in-flight promise
+      helicopterFetchPromise = (async () => {
+        try {
+          const FR24_API_KEY = process.env.FLIGHTRADAR24_API_KEY;
+
+          if (!FR24_API_KEY) {
+            throw new Error("Server configuration error: Missing FlightRadar24 API key");
+          }
+
+          // Indianapolis bounding box (approximate coordinates)
+          // North: 39.93, South: 39.63, West: -86.33, East: -85.93
+          const bounds = {
+            north: 39.93,
+            south: 39.63,
+            west: -86.33,
+            east: -85.93,
+          };
+
+          // FlightRadar24 API endpoint for live flight positions
+          const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
+
+          // Make request to FlightRadar24 API with timeout
+          // Note: We filter helicopters server-side since API filtering parameters vary
+          const response = await axios.get(apiUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'Accept-Version': 'v1',
+              'Authorization': `Bearer ${FR24_API_KEY}`,
+            },
+            params: {
+              bounds: `${bounds.north},${bounds.south},${bounds.west},${bounds.east}`,
+            },
+            timeout: 10000, // 10 second timeout
+          });
+
+          // Transform FlightRadar24 response to our helicopter schema
+          const helicopters: Helicopter[] = [];
+          let totalAircraft = 0;
+          let filteredOut = 0;
+
+          // Whitelist of known helicopter ICAO designators (exact match, case-insensitive)
+          const helicopterICAOCodes = new Set([
+            'H60', 'H64', 'EC35', 'EC45', 'EC30', 'EC55', 'EC65', 'EC75', 'BK17', 'AS50', 'AS32', 'AS35', 'AS50', 'AS55', 'AS65',
+            'B06', 'B47', 'B429', 'B407', 'B412', 'B505', 'MD50', 'MD60', 'MD90', 'MD52', 'MD11', 'R44', 'R66', 'R22', 
+            'S76', 'S92', 'A109', 'A119', 'A139', 'A169', 'A189', 'MI17', 'MI24', 'MI35', 'UH1', 'AH64', 'CH47', 
+            'ASTR', 'AS32', 'BO05', 'BO06', 'H500', 'H135', 'H145', 'H160', 'H175', 'H225', 'AW09', 'AW19', 'AW39', 'AW59', 'AW69', 'AW89'
+          ]);
+
+          if (response.data && response.data.data) {
+            for (const [flightId, flightData] of Object.entries(response.data.data as Record<string, any>)) {
+              totalAircraft++;
+              
+              try {
+                // Check the correct field for helicopter category
+                const aircraftCategory = flightData.aircraft?.category ?? flightData.detail?.aircraft?.category ?? '';
+                const aircraftType = (flightData.type || flightData.aircraft_code || '').toUpperCase();
+                
+                // Temporary debug logging for first aircraft
+                if (totalAircraft === 1) {
+                  console.log('[Debug] Sample aircraft data:', {
+                    flightId,
+                    category: aircraftCategory,
+                    type: aircraftType,
+                    rawCategory: flightData.category,
+                    aircraftObj: flightData.aircraft,
+                    detailObj: flightData.detail
+                  });
+                }
+                
+                // Check if this is a helicopter:
+                // 1. Check category field (value 'H' or 'helicopter')
+                // 2. Check exact ICAO code match from whitelist
+                const isCategoryHelicopter = aircraftCategory === 'H' || 
+                                            aircraftCategory === 'h' ||
+                                            aircraftCategory.toLowerCase() === 'helicopter';
+                
+                const isICAOHelicopter = helicopterICAOCodes.has(aircraftType);
+                
+                const isHelicopter = isCategoryHelicopter || isICAOHelicopter;
+                
+                if (!isHelicopter) {
+                  filteredOut++;
+                  continue; // Skip non-helicopters
+                }
+
+                const helicopter: Helicopter = {
+                  id: flightId,
+                  latitude: flightData.lat || flightData.latitude,
+                  longitude: flightData.lon || flightData.longitude,
+                  altitude: flightData.alt || flightData.altitude,
+                  heading: flightData.track || flightData.heading,
+                  speed: flightData.spd || flightData.speed,
+                  callsign: flightData.callsign || flightData.flight,
+                  registration: flightData.reg || flightData.registration,
+                  aircraftType: flightData.type || flightData.aircraft_code,
+                  origin: flightData.origin,
+                  destination: flightData.destination,
+                  lastUpdate: Date.now(),
+                };
+
+                // Validate against schema
+                helicopterSchema.parse(helicopter);
+                helicopters.push(helicopter);
+              } catch (error) {
+                // Skip invalid entries silently (don't flood logs)
+                continue;
+              }
+            }
+          }
+
+          // Log filtering stats for debugging
+          console.log(`[Helicopter Filter] Total aircraft: ${totalAircraft}, Filtered out: ${filteredOut}, Helicopters: ${helicopters.length}`);
+
+          // Cache the fresh data before returning
+          helicopterCache = {
+            data: helicopters,
+            timestamp: Date.now(),
+          };
+          console.log(`[Cache UPDATE] Stored ${helicopters.length} helicopters in cache`);
+
+          return helicopters;
+        } finally {
+          // Always clear the in-flight promise after completion (success or failure)
+          helicopterFetchPromise = null;
+          console.log('[In-flight Request] Cleared in-flight promise');
+        }
+      })();
+
+      // Await the promise we just created and return the result
+      const helicopters = await helicopterFetchPromise;
       res.json(helicopters);
     } catch (error) {
       console.error("Error fetching helicopters from FlightRadar24:", error);

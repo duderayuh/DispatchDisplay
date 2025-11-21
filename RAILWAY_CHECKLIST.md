@@ -22,7 +22,7 @@ FLIGHTRADAR24_API_KEY=your_fr24_key_here
 OPENAI_API_KEY=sk-proj-your_openai_key_here
 NOCODB_BASE_URL=https://your-nocodb-instance.railway.app
 NOCODB_API_TOKEN=your_nocodb_token_here
-NOCODB_TABLE_ID=vwwf41cmlhx8atps
+NOCODB_TABLE_ID=your_ID_here
 SESSION_SECRET=your_random_secret_here
 NODE_ENV=production
 ```
