@@ -193,23 +193,23 @@ export default function CombinedDashboard() {
       */}
       <Dialog open={isRadioOpen} onOpenChange={setIsRadioOpen}>
         <DialogContent 
-          className="w-[640px] max-w-[640px]" 
+          className="w-[900px] max-w-[900px]" 
           data-testid="dialog-radio"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Radio className="w-5 h-5" />
-              Radio Stream
+              Rdio Scanner - Indy Fire/Hospital/EMS
             </DialogTitle>
             <DialogDescription>
-              Live radio stream for dispatch communications
+              Click the LIVE button and select a talkgroup to start listening
             </DialogDescription>
           </DialogHeader>
           
           <div className="w-full">
             <iframe
               src="https://compassionate-connection.up.railway.app/"
-              className="w-full h-[480px] border-0 rounded-md"
+              className="w-full h-[600px] border-0 rounded-md"
               title="Radio Stream"
               data-testid="iframe-radio"
               allow="autoplay; encrypted-media; microphone; fullscreen"
