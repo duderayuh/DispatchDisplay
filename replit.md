@@ -24,7 +24,7 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**:
 - TanStack Query (React Query) for server state management
-- Auto-refresh every 15 seconds for real-time helicopter position updates
+- Auto-refresh every 2 minutes (120s) for helicopter position updates
 - Local state with React hooks for UI interactions
 
 **Design Philosophy**:
@@ -68,8 +68,11 @@ Preferred communication style: Simple, everyday language.
 
 **API Design**: RESTful endpoint architecture:
 - `GET /api/helicopters`: Fetches live helicopters in Indianapolis area from FlightRadar24
-  - Uses Bearer token authentication with FlightRadar24 API
-  - Filters for helicopter aircraft types within Indianapolis bounding box
+  - Uses FlightRadar24 API **light endpoint** (`/api/live/flight-positions/light`)
+  - Bearer token authentication with FlightRadar24 API
+  - Server-side caching (60s TTL) with promise memoization to prevent duplicate API calls
+  - API-level filtering using `categories=H` parameter (helicopters only)
+  - Client polling interval: 120 seconds (2 minutes)
   - Returns parsed and validated JSON using Zod schemas
   - Includes timeout handling (10s) and rate limit error handling
 - `GET /api/dispatch-calls`: Fetches emergency dispatch calls from NocoDB
@@ -83,10 +86,13 @@ Preferred communication style: Simple, everyday language.
   - Caches results forever on client (staleTime: Infinity)
 
 **Data Flow**:
-1. Client requests helicopter data every 15 seconds
-2. Server makes authenticated request to FlightRadar24 API
-3. Response filtered and transformed to helicopter schema
-4. Invalid entries skipped, valid helicopters returned to client
+1. Client requests helicopter data every 120 seconds (2 minutes)
+2. Server checks cache (60s TTL) and returns cached data if fresh
+3. If cache miss, server makes authenticated request to FlightRadar24 light endpoint
+4. API filters helicopters server-side using `categories=H` parameter
+5. Response transformed to helicopter schema and cached for 60 seconds
+6. Promise memoization prevents duplicate API calls during concurrent requests
+7. Invalid entries skipped, valid helicopters returned to client
 
 **Development Mode**: Vite middleware integration for hot module replacement (HMR) and development server.
 

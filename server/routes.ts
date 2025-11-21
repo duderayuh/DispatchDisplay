@@ -136,11 +136,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             east: -85.93,
           };
 
-          // FlightRadar24 API endpoint for live flight positions
-          const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/full";
+          // FlightRadar24 API endpoint for live flight positions (light version)
+          const apiUrl = "https://fr24api.flightradar24.com/api/live/flight-positions/light";
 
           // Make request to FlightRadar24 API with timeout
-          // Note: We filter helicopters server-side since API filtering parameters vary
+          // Filter for helicopters using categories=H parameter (more efficient than client-side filtering)
           const response = await axios.get(apiUrl, {
             headers: {
               'Accept': 'application/json',
@@ -149,6 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
             params: {
               bounds: `${bounds.north},${bounds.south},${bounds.west},${bounds.east}`,
+              categories: 'H', // H = HELICOPTERS category
             },
             timeout: 10000, // 10 second timeout
           });
@@ -156,52 +157,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Transform FlightRadar24 response to our helicopter schema
           const helicopters: Helicopter[] = [];
           let totalAircraft = 0;
-          let filteredOut = 0;
 
-          // Whitelist of known helicopter ICAO designators (exact match, case-insensitive)
-          const helicopterICAOCodes = new Set([
-            'H60', 'H64', 'EC35', 'EC45', 'EC30', 'EC55', 'EC65', 'EC75', 'BK17', 'AS50', 'AS32', 'AS35', 'AS50', 'AS55', 'AS65',
-            'B06', 'B47', 'B429', 'B407', 'B412', 'B505', 'MD50', 'MD60', 'MD90', 'MD52', 'MD11', 'R44', 'R66', 'R22', 
-            'S76', 'S92', 'A109', 'A119', 'A139', 'A169', 'A189', 'MI17', 'MI24', 'MI35', 'UH1', 'AH64', 'CH47', 
-            'ASTR', 'AS32', 'BO05', 'BO06', 'H500', 'H135', 'H145', 'H160', 'H175', 'H225', 'AW09', 'AW19', 'AW39', 'AW59', 'AW69', 'AW89'
-          ]);
+          // Light endpoint returns data as an array in response.data.data
+          // Already filtered by categories=H parameter, so all should be helicopters
+          if (response.data && response.data.data && Array.isArray(response.data.data)) {
+            totalAircraft = response.data.data.length;
 
-          if (response.data && response.data.data) {
-            for (const [flightId, flightData] of Object.entries(response.data.data as Record<string, any>)) {
-              totalAircraft++;
-              
+            for (const flightData of response.data.data) {
               try {
-                // Check the correct field for helicopter category
-                const aircraftCategory = flightData.aircraft?.category ?? flightData.detail?.aircraft?.category ?? '';
-                const aircraftType = (flightData.type || flightData.aircraft_code || '').toUpperCase();
-                
-                // Temporary debug logging for first aircraft
-                if (totalAircraft === 1) {
-                  console.log('[Debug] Sample aircraft data:', {
-                    flightId,
-                    category: aircraftCategory,
-                    type: aircraftType,
-                    rawCategory: flightData.category,
-                    aircraftObj: flightData.aircraft,
-                    detailObj: flightData.detail
-                  });
-                }
-                
-                // Check if this is a helicopter:
-                // 1. Check category field (value 'H' or 'helicopter')
-                // 2. Check exact ICAO code match from whitelist
-                const isCategoryHelicopter = aircraftCategory === 'H' || 
-                                            aircraftCategory === 'h' ||
-                                            aircraftCategory.toLowerCase() === 'helicopter';
-                
-                const isICAOHelicopter = helicopterICAOCodes.has(aircraftType);
-                
-                const isHelicopter = isCategoryHelicopter || isICAOHelicopter;
-                
-                if (!isHelicopter) {
-                  filteredOut++;
-                  continue; // Skip non-helicopters
-                }
+                // Extract flight ID (fr24_id or other identifier)
+                const flightId = flightData.fr24_id || flightData.id || `${flightData.callsign || 'unknown'}-${Date.now()}`;
 
                 const helicopter: Helicopter = {
                   id: flightId,
@@ -209,12 +174,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   longitude: flightData.lon || flightData.longitude,
                   altitude: flightData.alt || flightData.altitude,
                   heading: flightData.track || flightData.heading,
-                  speed: flightData.spd || flightData.speed,
+                  speed: flightData.gspeed || flightData.speed || flightData.spd,
                   callsign: flightData.callsign || flightData.flight,
                   registration: flightData.reg || flightData.registration,
                   aircraftType: flightData.type || flightData.aircraft_code,
-                  origin: flightData.origin,
-                  destination: flightData.destination,
+                  origin: flightData.orig_iata || flightData.orig_icao || flightData.origin,
+                  destination: flightData.dest_iata || flightData.dest_icao || flightData.destination,
                   lastUpdate: Date.now(),
                 };
 
@@ -229,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Log filtering stats for debugging
-          console.log(`[Helicopter Filter] Total aircraft: ${totalAircraft}, Filtered out: ${filteredOut}, Helicopters: ${helicopters.length}`);
+          console.log(`[Light API] Total helicopters received: ${totalAircraft}, Valid helicopters: ${helicopters.length}`);
 
           // Cache the fresh data before returning
           helicopterCache = {
