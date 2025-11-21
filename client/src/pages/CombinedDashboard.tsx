@@ -16,10 +16,10 @@ export default function CombinedDashboard() {
   const [previousCallIds, setPreviousCallIds] = useState<Set<number>>(new Set());
   const [isRadioOpen, setIsRadioOpen] = useState(false);
 
-  // Fetch helicopters (60s polling - server caches for 60s, helicopters don't move fast)
+  // Fetch helicopters (120s polling - server caches for 60s, helicopters don't move fast)
   const { data: helicopters, isLoading: helicoptersLoading, isError: helicoptersError } = useQuery<Helicopter[]>({
     queryKey: ["/api/helicopters"],
-    refetchInterval: 60000,
+    refetchInterval: 120000, // Auto-refresh every 2 minutes
     refetchIntervalInBackground: true,
   });
 
@@ -184,7 +184,7 @@ export default function CombinedDashboard() {
       {/* Footer */}
       <footer className="h-12 bg-card border-t border-card-border px-8 flex items-center justify-between flex-shrink-0" data-testid="footer-combined">
         <p className="text-[20px] text-muted-foreground">FlightRadar24 Live Tracking | NocoDB Emergency Dispatch</p>
-        <p className="text-[20px] text-muted-foreground font-mono">Helicopters: 60s | Calls: 15s</p>
+        <p className="text-[20px] text-muted-foreground font-mono">Helicopters: 120s | Calls: 15s</p>
       </footer>
       {/* Radio Stream Dialog 
           Note: Radix Dialog unmounts content when closed, so audio will restart when reopened.

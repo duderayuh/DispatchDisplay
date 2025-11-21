@@ -11,7 +11,7 @@ export default function HelicopterTracker() {
 
   const { data, isLoading, isError, error } = useQuery<Helicopter[]>({
     queryKey: ["/api/helicopters"],
-    refetchInterval: 60000, // Auto-refresh every 60 seconds (server caches for 60s)
+    refetchInterval: 120000, // Auto-refresh every 2 minutes (120 seconds)
     refetchIntervalInBackground: true,
   });
 
